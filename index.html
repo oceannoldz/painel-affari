@@ -23,7 +23,8 @@
 
   .container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
     gap: 10px;
     justify-items: center;
     align-items: start;
@@ -38,18 +39,13 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     padding: 10px;
     width: 100%;
-    max-width: 200px;
+    max-width: 180px;
     min-height: 220px;
     box-sizing: border-box;
     text-align: center;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    transition: transform 0.2s ease;
-  }
-
-  .card:hover {
-    transform: scale(1.02);
   }
 
   .logo {
@@ -108,11 +104,10 @@
 <div class="footer">Atualizando automaticamente a cada 10 segundos</div>
 
 <script>
-// Link GViz JSON da planilha publicada
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1fTb8DD-8YLfr18Pu3TbThB2AQVA7vEFQJp2xyLYWYx4/gviz/tq?tqx=out:json&gid=0";
 
-// Função para formatar datas/horas retornadas como Date(...) do GViz
-function formatarDataHora(valor) {
+// Formata coluna de Data (Date(ano,mes,dia))
+function formatarData(valor) {
   if (!valor) return "";
   if (typeof valor === "string" && valor.startsWith("Date(")) {
     const partes = valor.match(/\d+/g).map(Number);
@@ -120,15 +115,26 @@ function formatarDataHora(valor) {
       const ano = partes[0];
       const mes = partes[1] + 1; // JS meses começam em 0
       const dia = partes[2];
-      const hora = partes[3] || 0;
-      const min = partes[4] || 0;
-      return `${dia.toString().padStart(2,'0')}/${mes.toString().padStart(2,'0')}/${ano} ${hora.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
+      return `${dia.toString().padStart(2,'0')}/${mes.toString().padStart(2,'0')}/${ano}`;
     }
   }
   return valor;
 }
 
-// Carrega os dados da planilha
+// Formata coluna de Hora (Date(1899,11,30,hora,min))
+function formatarHora(valor) {
+  if (!valor) return "";
+  if (typeof valor === "string" && valor.startsWith("Date(")) {
+    const partes = valor.match(/\d+/g).map(Number);
+    if (partes.length >= 5) {
+      const hora = partes[3];
+      const min = partes[4];
+      return `${hora.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
+    }
+  }
+  return valor;
+}
+
 async function carregarDados() {
   try {
     const res = await fetch(SHEET_URL);
@@ -142,29 +148,35 @@ async function carregarDados() {
     container.innerHTML = "";
     loading.style.display = "none";
 
-    rows.forEach(r => {
-      const [
-        data, horario, local, secretaria,
-        diretor, itens, observacoes,
-        status, retirado
-      ] = r.c.map(c => c ? c.v : "");
-
-      const card = document.createElement("div");
+    // Mostra apenas os primeiros 10 registros (5 col × 2 lin)
+    for (let i = 0; i < 10; i++) {
+      const r = rows[i];
+      let card = document.createElement("div");
       card.className = "card";
-      card.innerHTML = `
-        <img src="download.png" class="logo" alt="Affari logo">
-        <h2>${secretaria || ""}</h2>
-        <div class="info">
-          <strong>Diretor:</strong> ${diretor || ""}<br>
-          <strong>Local:</strong> ${local || ""}<br>
-          <strong>Data:</strong> ${formatarData(data)}
-          <strong>Hora:</strong> ${formatarHora(horario)}
-        </div>
-        <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
-        <div class="status">${status || ""} ${retirado ? "• Retirado: " + retirado : ""}</div>
-      `;
+
+      if (r) {
+        const [
+          data, horario, local, secretaria,
+          diretor, itens, observacoes,
+          status, retirado
+        ] = r.c.map(c => c ? c.v : "");
+
+        card.innerHTML = `
+          <img src="download.png" class="logo" alt="Affari logo">
+          <h2>${secretaria || ""}</h2>
+          <div class="info">
+            <strong>Diretor:</strong> ${diretor || ""}<br>
+            <strong>Local:</strong> ${local || ""}<br>
+            <strong>Data:</strong> ${formatarData(data)}<br>
+            <strong>Hora:</strong> ${formatarHora(horario)}
+          </div>
+          <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
+          <div class="status">${status || ""} ${retirado ? "• Retirado: " + retirado : ""}</div>
+        `;
+      }
+
       container.appendChild(card);
-    });
+    }
 
   } catch(e) {
     console.error("Erro ao carregar dados:", e);
@@ -172,12 +184,8 @@ async function carregarDados() {
   }
 }
 
-// Primeira carga + atualização a cada 10s
 carregarDados();
 setInterval(carregarDados, 10000);
 </script>
 </body>
 </html>
-
-
-
