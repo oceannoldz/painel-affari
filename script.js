@@ -3,7 +3,7 @@
 // ===========================
 
 const PLANILHA = "painel-affari.xlsx";
-const INTERVALO = 10 * 60 * 1000; // 10 minutos
+const INTERVALO = 10 * 1000; // 10 segundos
 
 // -------- Função para converter número Excel em data/hora legível --------
 function excelSerialToDate(serial) {
@@ -97,7 +97,7 @@ function renderizarCards(dados) {
     let estado = statusSalvos[idUnico] || linha.Status || "Pendente";
 
     card.innerHTML = `
-      <img src="https://i.ibb.co/f9bkg2P/affari.png" alt="Affari logo">
+      <img src="download.png" alt="Affari logo">
       <h2>${secretaria}</h2>
       <div class="info">
         <strong>Diretor:</strong> ${diretor}<br>
@@ -116,14 +116,14 @@ function renderizarCards(dados) {
     // Atualiza aparência conforme status
     function atualizarVisual() {
       statusEl.textContent = estado;
-      card.classList.remove("pendente", "enviado", "retirado");
+      card.classList.remove("pendente", "Entregue", "retirado");
 
       switch (estado.toLowerCase()) {
         case "pendente":
           card.classList.add("pendente");
           break;
         case "enviado":
-          card.classList.add("enviado");
+          card.classList.add("Entregue");
           break;
         case "retirado":
           card.classList.add("retirado");
@@ -133,7 +133,7 @@ function renderizarCards(dados) {
 
     // Clique alterna status e salva no localStorage
     card.addEventListener("click", () => {
-      if (estado.toLowerCase() === "pendente") estado = "Enviado";
+      if (estado.toLowerCase() === "pendente") estado = "Entregue";
       else if (estado.toLowerCase() === "enviado") estado = "Retirado";
       else estado = "Pendente";
 
@@ -155,3 +155,4 @@ function renderizarCards(dados) {
 // -------- Inicialização --------
 carregarPlanilha();
 setInterval(carregarPlanilha, INTERVALO);
+
