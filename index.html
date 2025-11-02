@@ -38,18 +38,23 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     padding: 10px;
     width: 100%;
-    max-width: 200px; /* menor largura */
+    max-width: 200px;
     min-height: 220px;
     box-sizing: border-box;
     text-align: center;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    transition: transform 0.2s ease;
+  }
+
+  .card:hover {
+    transform: scale(1.02);
   }
 
   .logo {
     width: 30%;
-    max-width: 50px; /* menor logo */
+    max-width: 50px;
     margin: 0 auto 6px auto;
     opacity: 0.9;
   }
@@ -87,6 +92,13 @@
     bottom: 5px;
     width: 100%;
   }
+
+  .loading {
+    text-align: center;
+    color: #555;
+    font-size: 14px;
+    margin-top: 20px;
+  }
 </style>
 </head>
 <body>
@@ -96,15 +108,31 @@
 <div class="footer">Atualizando automaticamente a cada 10 segundos</div>
 
 <script>
-// Link da planilha publicada em formato GViz JSON
+// Link GViz JSON da planilha publicada
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1fTb8DD-8YLfr18Pu3TbThB2AQVA7vEFQJp2xyLYWYx4/gviz/tq?tqx=out:json&gid=0";
 
+// Função para formatar datas/horas retornadas como Date(...) do GViz
+function formatarDataHora(valor) {
+  if (!valor) return "";
+  if (typeof valor === "string" && valor.startsWith("Date(")) {
+    const partes = valor.match(/\d+/g).map(Number);
+    if (partes.length >= 3) {
+      const ano = partes[0];
+      const mes = partes[1] + 1; // JS meses começam em 0
+      const dia = partes[2];
+      const hora = partes[3] || 0;
+      const min = partes[4] || 0;
+      return `${dia.toString().padStart(2,'0')}/${mes.toString().padStart(2,'0')}/${ano} ${hora.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
+    }
+  }
+  return valor;
+}
+
+// Carrega os dados da planilha
 async function carregarDados() {
   try {
     const res = await fetch(SHEET_URL);
     const text = await res.text();
-
-    // Extrai apenas o JSON do retorno do Google Sheets
     const jsonStr = text.match(/(?<=google\.visualization\.Query\.setResponse\().*(?=\);)/s)[0];
     const json = JSON.parse(jsonStr);
     const rows = json.table.rows;
@@ -129,8 +157,7 @@ async function carregarDados() {
         <div class="info">
           <strong>Diretor:</strong> ${diretor || ""}<br>
           <strong>Local:</strong> ${local || ""}<br>
-          <strong>Data:</strong> ${formatarDataHora(data)}<br>
-<strong>Hora:</strong> ${formatarDataHora(horario)}
+          <strong>Data/Hora:</strong> ${formatarDataHora(data)} ${formatarDataHora(horario)}
         </div>
         <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
         <div class="status">${status || ""} ${retirado ? "• Retirado: " + retirado : ""}</div>
@@ -144,12 +171,9 @@ async function carregarDados() {
   }
 }
 
-// Primeira carga + atualização a cada 10 segundos
+// Primeira carga + atualização a cada 10s
 carregarDados();
 setInterval(carregarDados, 10000);
 </script>
 </body>
 </html>
-
-
-
