@@ -5,85 +5,196 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel de Demandas - Affari</title>
 <style>
-html, body { height:100%; margin:0; padding:0; font-family:'Segoe UI', Arial; background:#fdfdfd; overflow:hidden; }
-h1 { text-align:center; margin:8px 0; font-size:22px; }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: #434343;
+  color: #E3FDF5;
+  overflow-x: hidden;
+}
+
+h1 {
+  text-align: center;
+  margin: 8px 0;
+  font-size: 22px;
+}
+
 .container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
-  gap:10px; padding:10px; height:calc(100% - 60px); justify-items:center; align-items:start; overflow:hidden;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  padding: 10px;
+  justify-items: center;
+  align-items: start;
 }
+
 .card {
-  background:#e0e0e0; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.15);
-  padding:10px; width:100%; max-width:220px; min-height:260px; text-align:center;
-  display:flex; flex-direction:column; justify-content:flex-start; font-size:12px; cursor:pointer; transition:0.3s;
+  background: #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  padding: 10px;
+  width: 100%;
+  max-width: 220px;
+  min-height: 260px;
+  box-sizing: border-box;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.3s;
 }
-.card.entregue { background-color:#c8e6c9; }
-.logo { width:25%; max-width:50px; margin:0 auto 6px auto; opacity:0.9; }
-h2 { font-size:14px; margin:4px 0; }
-.info { font-size:12px; line-height:1.2; }
-.itens, .observacoes { text-align:left; font-size:11px; margin-top:6px; border-top:1px solid #ccc; padding-top:4px; white-space:pre-line; }
-.status { font-weight:bold; font-size:11px; margin-top:4px; }
-.footer { text-align:center; font-size:11px; color:#888; position:absolute; bottom:5px; width:100%; }
-.loading { text-align:center; color:#555; font-size:14px; margin-top:20px; }
-@media(max-width:1400px){ .card{max-width:200px; min-height:240px;} }
-@media(max-width:1000px){ .card{max-width:180px; min-height:220px;} }
-@media(max-width:700px){ .container{grid-template-columns:repeat(2,1fr);} .card{max-width:90%; min-height:200px;} }
-@media(max-width:500px){ h1{font-size:18px;} .card{font-size:10px;} }
+
+.card.entregue { background-color: #c8e6c9; }
+
+.logo {
+  width: 25%;
+  max-width: 50px;
+  margin: 0 auto 6px auto;
+  opacity: 0.9;
+}
+
+h2 {
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+.info {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.itens, .observacoes {
+  text-align: left;
+  font-size: 11px;
+  margin-top: 6px;
+  border-top: 1px solid #ccc;
+  padding-top: 4px;
+  white-space: pre-line;
+}
+
+.status {
+  font-weight: bold;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.footer {
+  text-align: center;
+  font-size: 11px;
+  color: #888;
+  margin-top: 5px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 1000px) {
+  .card { max-width: 180px; min-height: 220px; font-size: 11px; }
+}
+
+@media (max-width: 700px) {
+  .container { grid-template-columns: repeat(2, 1fr); }
+  .card { max-width: 90%; min-height: 200px; }
+}
+
+@media (max-width: 500px) {
+  h1 { font-size: 18px; }
+  .card { font-size: 10px; }
+}
 </style>
 </head>
 <body>
 <h1>Painel de Demandas - Affari</h1>
-<div class="loading" id="loading">🔄 Carregando dados da planilha...</div>
 <div class="container" id="cards"></div>
 <div class="footer">Atualizando automaticamente a cada 10 segundos</div>
 
 <script>
-async function carregarDados() {
-    try {
-        const res = await fetch("/dados");
-        const registros = await res.json();
-        const container = document.getElementById("cards");
-        const loading = document.getElementById("loading");
-        container.innerHTML = "";
-        loading.style.display = "none";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1fTb8DD-8YLfr18Pu3TbThB2AQVA7vEFQJp2xyLYWYx4/gviz/tq?tqx=out:json&gid=0";
 
-        registros.slice(0,10).forEach(r=>{
-            const card = document.createElement("div");
-            card.className = "card" + (r.retirado ? " entregue" : "");
-            const itensText = r.itens.map(i => i.quantidade + " " + i.item).join("<br>");
-            card.innerHTML = `
-                <img src="download.png" class="logo" alt="Affari logo">
-                <h2>${r.secretaria}</h2>
-                <div class="info">
-                    <strong>Diretor:</strong> ${r.diretor}<br>
-                    <strong>Local:</strong> ${r.local}<br>
-                    <strong>Data:</strong> ${r.data}<br>
-                    <strong>Hora:</strong> ${r.horario}<br>
-                    <strong>Pax:</strong> ${r.pax}
-                </div>
-                <div class="itens"><strong>Itens:</strong><br>${itensText}</div>
-                <div class="observacoes"><strong>Observações:</strong><br>${r.observacoes}</div>
-                <div class="status">${r.status} ${r.retirado ? "• Retirado" : ""}</div>
-            `;
-
-            card.onclick = async ()=>{
-                if(!r.retirado){
-                    await fetch("/confirmar",{
-                        method:"POST",
-                        headers:{"Content-Type":"application/json"},
-                        body:JSON.stringify({id:r.id})
-                    });
-                    r.retirado = true;
-                    card.classList.add("entregue");
-                    card.querySelector(".status").textContent += " • Retirado";
-                }
-            };
-            container.appendChild(card);
-        });
-    } catch(e){
-        console.error("Erro ao carregar dados:", e);
-        document.getElementById("loading").textContent = "❌ Erro ao carregar dados.";
+function formatarData(valor) {
+  if(!valor) return "";
+  if(typeof valor === "string" && valor.startsWith("Date(")){
+    const partes = valor.match(/\d+/g).map(Number);
+    if(partes.length >= 3){
+      const ano = partes[0], mes = partes[1]+1, dia = partes[2];
+      return `${dia.toString().padStart(2,'0')}/${mes.toString().padStart(2,'0')}/${ano}`;
     }
+  }
+  return valor;
+}
+
+function formatarHora(valor) {
+  if(!valor) return "";
+  if(typeof valor === "string" && valor.startsWith("Date(")){
+    const partes = valor.match(/\d+/g).map(Number);
+    if(partes.length >= 5){
+      const hora = partes[3], min = partes[4];
+      return `${hora.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
+    }
+  }
+  return valor;
+}
+
+async function carregarDados() {
+  try {
+    const res = await fetch(SHEET_URL);
+    const text = await res.text();
+    const jsonStr = text.match(/(?<=google\.visualization\.Query\.setResponse\().*(?=\);)/s)[0];
+    const json = JSON.parse(jsonStr);
+    const rows = json.table.rows;
+
+    const container = document.getElementById("cards");
+    container.innerHTML = "";
+
+    for(let i=0; i<10; i++){
+      const r = rows[i];
+      const card = document.createElement("div");
+      card.className = "card";
+
+      if(r){
+        const [
+          data, horario, local, secretaria,
+          diretor, itens, observacoes,
+          status, retirado, pax
+        ] = r.c.map(c => c ? c.v : "");
+
+        const entregue = retirado === true || retirado === "true" || retirado === "✔";
+        if(entregue) card.classList.add("entregue");
+
+        card.innerHTML = `
+          <img src="download.png" class="logo" alt="Affari logo">
+          <h2>${secretaria || ""}</h2>
+          <div class="info">
+            <strong>Diretor:</strong> ${diretor || ""}<br>
+            <strong>Local:</strong> ${local || ""}<br>
+            <strong>Data:</strong> ${formatarData(data)}<br>
+            <strong>Hora:</strong> ${formatarHora(horario)}<br>
+            <strong>Pax:</strong> ${pax || "0"}
+          </div>
+          <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
+          <div class="observacoes"><strong>Observações:</strong><br>${observacoes || ""}</div>
+          <div class="status">${status || ""} ${entregue ? "• Retirado" : ""}</div>
+        `;
+
+        card.onclick = async () => {
+          if(!entregue){
+            await fetch("/confirmar", {
+              method:"POST",
+              headers: {"Content-Type":"application/json"},
+              body: JSON.stringify({id: r.c[0].v || i.toString()})
+            });
+            card.classList.add("entregue");
+            card.querySelector(".status").textContent += " • Retirado";
+          }
+        };
+      }
+      container.appendChild(card);
+    }
+  } catch(e){
+    console.error("Erro ao carregar dados:", e);
+  }
 }
 
 carregarDados();
@@ -91,3 +202,6 @@ setInterval(carregarDados,10000);
 </script>
 </body>
 </html>
+
+
+
