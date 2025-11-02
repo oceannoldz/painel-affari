@@ -12,7 +12,7 @@ html, body {
   font-family: 'Segoe UI', Arial, sans-serif;
   background-color: #fdfdfd;
   color: #222;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 h1 {
@@ -24,13 +24,10 @@ h1 {
 .container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  grid-auto-rows: 1fr;
   gap: 10px;
   padding: 10px;
-  height: calc(100% - 60px);
   justify-items: center;
   align-items: start;
-  overflow: hidden;
 }
 
 .card {
@@ -89,48 +86,27 @@ h2 {
   text-align: center;
   font-size: 11px;
   color: #888;
-  position: absolute;
-  bottom: 5px;
-  width: 100%;
+  margin-top: 5px;
 }
 
-.loading {
-  text-align: center;
-  color: #555;
-  font-size: 14px;
-  margin-top: 20px;
-}
-
-/* Ajustes responsivos adicionais */
-@media (max-width: 1400px) {
-  .card {
-    max-width: 200px;
-    min-height: 240px;
-  }
-}
-
+/* Mobile responsiveness */
 @media (max-width: 1000px) {
-  .card {
-    max-width: 180px;
-    min-height: 220px;
-  }
+  .card { max-width: 180px; min-height: 220px; font-size: 11px; }
 }
 
 @media (max-width: 700px) {
-  .container {
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 1fr;
-  }
-  .card {
-    max-width: 90%;
-    min-height: 200px;
-  }
+  .container { grid-template-columns: repeat(2, 1fr); }
+  .card { max-width: 90%; min-height: 200px; }
+}
+
+@media (max-width: 500px) {
+  h1 { font-size: 18px; }
+  .card { font-size: 10px; }
 }
 </style>
 </head>
 <body>
 <h1>Painel de Demandas - Affari</h1>
-<div class="loading" id="loading">🔄 Carregando dados da planilha...</div>
 <div class="container" id="cards"></div>
 <div class="footer">Atualizando automaticamente a cada 10 segundos</div>
 
@@ -138,13 +114,11 @@ h2 {
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1fTb8DD-8YLfr18Pu3TbThB2AQVA7vEFQJp2xyLYWYx4/gviz/tq?tqx=out:json&gid=0";
 
 function formatarData(valor) {
-  if (!valor) return "";
-  if (typeof valor === "string" && valor.startsWith("Date(")) {
+  if(!valor) return "";
+  if(typeof valor === "string" && valor.startsWith("Date(")){
     const partes = valor.match(/\d+/g).map(Number);
-    if (partes.length >= 3) {
-      const ano = partes[0];
-      const mes = partes[1]+1;
-      const dia = partes[2];
+    if(partes.length >= 3){
+      const ano = partes[0], mes = partes[1]+1, dia = partes[2];
       return `${dia.toString().padStart(2,'0')}/${mes.toString().padStart(2,'0')}/${ano}`;
     }
   }
@@ -152,12 +126,11 @@ function formatarData(valor) {
 }
 
 function formatarHora(valor) {
-  if (!valor) return "";
-  if (typeof valor === "string" && valor.startsWith("Date(")) {
+  if(!valor) return "";
+  if(typeof valor === "string" && valor.startsWith("Date(")){
     const partes = valor.match(/\d+/g).map(Number);
-    if (partes.length >= 5) {
-      const hora = partes[3];
-      const min = partes[4];
+    if(partes.length >= 5){
+      const hora = partes[3], min = partes[4];
       return `${hora.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
     }
   }
@@ -173,16 +146,14 @@ async function carregarDados() {
     const rows = json.table.rows;
 
     const container = document.getElementById("cards");
-    const loading = document.getElementById("loading");
     container.innerHTML = "";
-    loading.style.display = "none";
 
-    for (let i=0;i<10;i++) {
+    for(let i=0; i<10; i++){
       const r = rows[i];
       const card = document.createElement("div");
       card.className = "card";
 
-      if(r) {
+      if(r){
         const [
           data, horario, local, secretaria,
           diretor, itens, observacoes,
@@ -190,8 +161,7 @@ async function carregarDados() {
         ] = r.c.map(c => c ? c.v : "");
 
         const entregue = retirado === true || retirado === "true" || retirado === "✔";
-
-        card.className += entregue ? " entregue" : "";
+        if(entregue) card.classList.add("entregue");
 
         card.innerHTML = `
           <img src="download.png" class="logo" alt="Affari logo">
@@ -220,12 +190,10 @@ async function carregarDados() {
           }
         };
       }
-
       container.appendChild(card);
     }
   } catch(e){
     console.error("Erro ao carregar dados:", e);
-    document.getElementById("loading").textContent = "❌ Erro ao carregar dados da planilha.";
   }
 }
 
