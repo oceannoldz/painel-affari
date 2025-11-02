@@ -157,7 +157,7 @@ async function carregarDados() {
       if (r) {
         const [
           data, horario, local, secretaria,
-          diretor, itens, observacoes,
+          diretor, pax, itens, observacoes,
           status, retirado
         ] = r.c.map(c => c ? c.v : "");
 
@@ -169,6 +169,7 @@ async function carregarDados() {
             <strong>Local:</strong> ${local || ""}<br>
             <strong>Data:</strong> ${formatarData(data)}<br>
             <strong>Hora:</strong> ${formatarHora(horario)}
+            <strong>Pax:</strong> ${Pax || ""}<br>
           </div>
           <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
           <div class="status">${status || ""} ${retirado ? "• Retirado: " + retirado : ""}</div>
@@ -189,3 +190,4 @@ setInterval(carregarDados, 10000);
 </script>
 </body>
 </html>
+
