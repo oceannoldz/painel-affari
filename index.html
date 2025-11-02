@@ -157,7 +157,8 @@ async function carregarDados() {
         <div class="info">
           <strong>Diretor:</strong> ${diretor || ""}<br>
           <strong>Local:</strong> ${local || ""}<br>
-          <strong>Data/Hora:</strong> ${formatarDataHora(data)} ${formatarDataHora(horario)}
+          <strong>Data ${formatarDataHora(data)}
+          </strong>Hora ${formatarDataHora(horario)}
         </div>
         <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
         <div class="status">${status || ""} ${retirado ? "• Retirado: " + retirado : ""}</div>
@@ -177,3 +178,4 @@ setInterval(carregarDados, 10000);
 </script>
 </body>
 </html>
+
