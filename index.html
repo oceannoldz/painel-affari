@@ -9,7 +9,7 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden; /* impede rolagem */
+    overflow: hidden;
     font-family: 'Segoe UI', Arial, sans-serif;
     background-color: #fdfdfd;
     color: #222;
@@ -40,7 +40,7 @@
     padding: 10px;
     width: 100%;
     max-width: 180px;
-    min-height: 220px;
+    min-height: 240px;
     box-sizing: border-box;
     text-align: center;
     display: flex;
@@ -106,14 +106,14 @@
 <script>
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1fTb8DD-8YLfr18Pu3TbThB2AQVA7vEFQJp2xyLYWYx4/gviz/tq?tqx=out:json&gid=0";
 
-// Formata coluna de Data (Date(ano,mes,dia))
+// Formata coluna de Data
 function formatarData(valor) {
   if (!valor) return "";
   if (typeof valor === "string" && valor.startsWith("Date(")) {
     const partes = valor.match(/\d+/g).map(Number);
     if (partes.length >= 3) {
       const ano = partes[0];
-      const mes = partes[1] + 1; // JS meses começam em 0
+      const mes = partes[1] + 1;
       const dia = partes[2];
       return `${dia.toString().padStart(2,'0')}/${mes.toString().padStart(2,'0')}/${ano}`;
     }
@@ -121,7 +121,7 @@ function formatarData(valor) {
   return valor;
 }
 
-// Formata coluna de Hora (Date(1899,11,30,hora,min))
+// Formata coluna de Hora
 function formatarHora(valor) {
   if (!valor) return "";
   if (typeof valor === "string" && valor.startsWith("Date(")) {
@@ -148,7 +148,6 @@ async function carregarDados() {
     container.innerHTML = "";
     loading.style.display = "none";
 
-    // Mostra apenas os primeiros 10 registros (5 col × 2 lin)
     for (let i = 0; i < 10; i++) {
       const r = rows[i];
       let card = document.createElement("div");
@@ -157,8 +156,8 @@ async function carregarDados() {
       if (r) {
         const [
           data, horario, local, secretaria,
-          diretor, pax, itens, observacoes,
-          status, retirado
+          diretor, itens, observacoes,
+          status, retirado, pax
         ] = r.c.map(c => c ? c.v : "");
 
         card.innerHTML = `
@@ -168,8 +167,8 @@ async function carregarDados() {
             <strong>Diretor:</strong> ${diretor || ""}<br>
             <strong>Local:</strong> ${local || ""}<br>
             <strong>Data:</strong> ${formatarData(data)}<br>
-            <strong>Hora:</strong> ${formatarHora(horario)}
-            <strong>Pax:</strong> ${Pax || ""}<br>
+            <strong>Hora:</strong> ${formatarHora(horario)}<br>
+            <strong>Pax:</strong> ${pax || "0"}
           </div>
           <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
           <div class="status">${status || ""} ${retirado ? "• Retirado: " + retirado : ""}</div>
@@ -190,4 +189,3 @@ setInterval(carregarDados, 10000);
 </script>
 </body>
 </html>
-
