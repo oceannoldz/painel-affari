@@ -2,13 +2,12 @@ from flask import Flask, jsonify, request, send_from_directory
 import pandas as pd
 import json
 import os
-from datetime import datetime
 
 app = Flask(__name__)
 CAMINHO_PLANILHA = "demandas.xlsx"  # sua planilha Excel
-
-# Arquivo local para armazenar status de entrega
 STATUS_FILE = "status_coffees.json"
+
+# Inicializa arquivo de status se não existir
 if not os.path.exists(STATUS_FILE):
     with open(STATUS_FILE, "w") as f:
         json.dump({}, f)
@@ -45,7 +44,7 @@ def dados():
 
     registros = []
     for idx, row in df.iterrows():
-        r_id = str(row.get("ID", idx))  # cada linha precisa de um ID único
+        r_id = str(row.get("ID", idx))  # ID único
         registros.append({
             "id": r_id,
             "data": str(row.get("Data","")),
