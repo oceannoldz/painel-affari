@@ -170,6 +170,7 @@ async function carregarDados() {
             <strong>Hora:</strong> ${formatarHora(horario)}<br>
             <strong>Pax:</strong> ${pax || "0"}
           </div>
+          <div class="observacoes"><strong>Observações:</strong><br>${observacoes || ""}</div>
           <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
           <div class="status">${status || ""} ${retirado ? "• Retirado: " + retirado : ""}</div>
         `;
@@ -189,3 +190,4 @@ setInterval(carregarDados, 10000);
 </script>
 </body>
 </html>
+
