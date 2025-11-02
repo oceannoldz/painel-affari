@@ -47,7 +47,11 @@ h1 {
   flex-direction: column;
   justify-content: flex-start;
   font-size: 12px;
+  cursor: pointer;
+  transition: 0.3s;
 }
+
+.card.entregue { background-color: #c8e6c9; }
 
 .logo {
   width: 25%;
@@ -68,7 +72,7 @@ h2 {
 
 .itens, .observacoes {
   text-align: left;
-  font-size: 14px;
+  font-size: 11px;
   margin-top: 6px;
   border-top: 1px solid #ccc;
   padding-top: 4px;
@@ -139,7 +143,7 @@ function formatarData(valor) {
     const partes = valor.match(/\d+/g).map(Number);
     if (partes.length >= 3) {
       const ano = partes[0];
-      const mes = partes[1] + 1;
+      const mes = partes[1]+1;
       const dia = partes[2];
       return `${dia.toString().padStart(2,'0')}/${mes.toString().padStart(2,'0')}/${ano}`;
     }
@@ -173,18 +177,21 @@ async function carregarDados() {
     container.innerHTML = "";
     loading.style.display = "none";
 
-    // Mostrar até 10 cards
-    for (let i = 0; i < 10; i++) {
+    for (let i=0;i<10;i++) {
       const r = rows[i];
-      let card = document.createElement("div");
+      const card = document.createElement("div");
       card.className = "card";
 
-      if (r) {
+      if(r) {
         const [
           data, horario, local, secretaria,
           diretor, itens, observacoes,
           status, retirado, pax
         ] = r.c.map(c => c ? c.v : "");
+
+        const entregue = retirado === true || retirado === "true" || retirado === "✔";
+
+        card.className += entregue ? " entregue" : "";
 
         card.innerHTML = `
           <img src="download.png" class="logo" alt="Affari logo">
@@ -198,21 +205,32 @@ async function carregarDados() {
           </div>
           <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
           <div class="observacoes"><strong>Observações:</strong><br>${observacoes || ""}</div>
-          <div class="status">${status || ""} ${retirado ? "• Retirado: " + retirado : ""}</div>
+          <div class="status">${status || ""} ${entregue ? "• Retirado" : ""}</div>
         `;
+
+        card.onclick = async () => {
+          if(!entregue){
+            await fetch("/confirmar", {
+              method:"POST",
+              headers: {"Content-Type":"application/json"},
+              body: JSON.stringify({id: r.c[0].v || i.toString()})
+            });
+            card.classList.add("entregue");
+            card.querySelector(".status").textContent += " • Retirado";
+          }
+        };
       }
 
       container.appendChild(card);
     }
-
-  } catch(e) {
+  } catch(e){
     console.error("Erro ao carregar dados:", e);
     document.getElementById("loading").textContent = "❌ Erro ao carregar dados da planilha.";
   }
 }
 
 carregarDados();
-setInterval(carregarDados, 10000);
+setInterval(carregarDados,10000);
 </script>
 </body>
 </html>
