@@ -5,96 +5,97 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel de Demandas - Affari</title>
 <style>
-  html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background-color: #fdfdfd;
-    color: #222;
-  }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: #fdfdfd;
+  color: #222;
+}
 
-  h1 {
-    text-align: center;
-    margin: 10px 0;
-    font-size: 22px;
-  }
+h1 {
+  text-align: center;
+  margin: 8px 0;
+  font-size: 20px;
+}
 
-  .container {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 10px;
-    justify-items: center;
-    align-items: start;
-    padding: 0 20px;
-    height: calc(100% - 60px);
-    overflow: hidden;
-  }
+.container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 6px;
+  justify-items: center;
+  align-items: start;
+  padding: 0 10px;
+  height: calc(100% - 50px);
+  overflow: hidden;
+}
 
-  .card {
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    padding: 10px;
-    width: 100%;
-    max-width: 180px;
-    min-height: 240px;
-    box-sizing: border-box;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-  }
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 6px;
+  width: 100%;
+  max-width: 170px;
+  min-height: 200px;
+  box-sizing: border-box;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  font-size: 11px;
+}
 
-  .logo {
-    width: 30%;
-    max-width: 50px;
-    margin: 0 auto 6px auto;
-    opacity: 0.9;
-  }
+.logo {
+  width: 25%;
+  max-width: 40px;
+  margin: 0 auto 4px auto;
+  opacity: 0.9;
+}
 
-  h2 {
-    font-size: 15px;
-    margin: 4px 0;
-  }
+h2 {
+  font-size: 13px;
+  margin: 2px 0;
+}
 
-  .info {
-    font-size: 12px;
-    line-height: 1.2;
-  }
+.info {
+  font-size: 11px;
+  line-height: 1.1;
+}
 
-  .itens {
-    text-align: left;
-    font-size: 11px;
-    margin-top: 6px;
-    border-top: 1px solid #ddd;
-    padding-top: 4px;
-    white-space: pre-line;
-  }
+.itens, .observacoes {
+  text-align: left;
+  font-size: 10px;
+  margin-top: 4px;
+  border-top: 1px solid #ddd;
+  padding-top: 2px;
+  white-space: pre-line;
+}
 
-  .status {
-    font-weight: bold;
-    font-size: 11px;
-    margin-top: 4px;
-  }
+.status {
+  font-weight: bold;
+  font-size: 10px;
+  margin-top: 3px;
+}
 
-  .footer {
-    text-align: center;
-    font-size: 11px;
-    color: #888;
-    position: absolute;
-    bottom: 5px;
-    width: 100%;
-  }
+.footer {
+  text-align: center;
+  font-size: 10px;
+  color: #888;
+  position: absolute;
+  bottom: 3px;
+  width: 100%;
+}
 
-  .loading {
-    text-align: center;
-    color: #555;
-    font-size: 14px;
-    margin-top: 20px;
-  }
+.loading {
+  text-align: center;
+  color: #555;
+  font-size: 12px;
+  margin-top: 15px;
+}
 </style>
 </head>
 <body>
@@ -106,7 +107,6 @@
 <script>
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1fTb8DD-8YLfr18Pu3TbThB2AQVA7vEFQJp2xyLYWYx4/gviz/tq?tqx=out:json&gid=0";
 
-// Formata coluna de Data
 function formatarData(valor) {
   if (!valor) return "";
   if (typeof valor === "string" && valor.startsWith("Date(")) {
@@ -121,7 +121,6 @@ function formatarData(valor) {
   return valor;
 }
 
-// Formata coluna de Hora
 function formatarHora(valor) {
   if (!valor) return "";
   if (typeof valor === "string" && valor.startsWith("Date(")) {
@@ -170,8 +169,8 @@ async function carregarDados() {
             <strong>Hora:</strong> ${formatarHora(horario)}<br>
             <strong>Pax:</strong> ${pax || "0"}
           </div>
-          <div class="observacoes"><strong>Observações:</strong><br>${observacoes || ""}</div>
           <div class="itens"><strong>Itens:</strong><br>${itens || ""}</div>
+          <div class="observacoes"><strong>Observações:</strong><br>${observacoes || ""}</div>
           <div class="status">${status || ""} ${retirado ? "• Retirado: " + retirado : ""}</div>
         `;
       }
@@ -190,4 +189,3 @@ setInterval(carregarDados, 10000);
 </script>
 </body>
 </html>
-
