@@ -91,7 +91,9 @@ async function carregarDados() {
   try {
     const res = await fetch(SHEET_URL);
     const text = await res.text();
-    const json = JSON.parse(text.substr(47).slice(0, -2));
+const jsonStr = text.match(/(?<=google\.visualization\.Query\.setResponse\().*(?=\);)/s)[0];
+const json = JSON.parse(jsonStr);
+
     const rows = json.table.rows;
 
     const container = document.getElementById("cards");
@@ -130,4 +132,5 @@ setInterval(carregarDados, 10000); // Atualiza a cada 10s
 </script>
 </body>
 </html>
+
 
