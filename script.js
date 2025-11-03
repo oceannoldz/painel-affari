@@ -1,10 +1,16 @@
+// ===========================
+// Painel de Demandas - Affari
+// ===========================
+
 const PLANILHA =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
 
 const API_URL =
   "https://script.google.com/macros/s/AKfycbw9Hw6fcNuZgc3ptONEyRBnGjjJUpfQL-k88eHUESH7OGp6xwTz3GnlsJASYnMmSsp_-A/exec";
 
-const INTERVALO = 60 * 1000; // 1 minuto
+const INTERVALO = 60 * 1000; // Atualiza a cada 1 minuto
+
+// ======= Conversores de dados =======
 
 function excelSerialToDate(serial) {
   if (!serial) return "";
@@ -54,15 +60,20 @@ function apenasData(str) {
   return m ? m[1] : String(str).trim();
 }
 
+// ======= Leitura da planilha =======
+
 async function carregarPlanilha() {
   try {
     const url = PLANILHA + "&t=" + new Date().getTime();
-    const response = await fetch(url);
+    let response = await fetch(url);
     if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
 
     let texto = await response.text();
     texto = texto.replace(/^\uFEFF/, "").trim();
-    if (texto.startsWith("<")) throw new Error("Planilha não publicada como CSV.");
+
+    if (texto.startsWith("<")) {
+      throw new Error("⚠️ A planilha não está publicada em formato CSV.");
+    }
 
     const primeiraLinha = texto.split("\n")[0];
     const delimitador = primeiraLinha.includes(";") ? ";" : ",";
@@ -74,6 +85,10 @@ async function carregarPlanilha() {
     });
 
     const dados = parsed.data;
+    if (!dados.length) {
+      throw new Error("⚠️ A planilha foi carregada, mas não contém registros.");
+    }
+
     renderizarCards(dados);
   } catch (erro) {
     console.error("Erro ao ler planilha:", erro);
@@ -81,6 +96,8 @@ async function carregarPlanilha() {
       <p style="color:white; text-align:center;">⚠️ ${erro.message}</p>`;
   }
 }
+
+// ======= Renderização dos cards =======
 
 function renderizarCards(dados) {
   const container = document.getElementById("cardsContainer");
@@ -110,25 +127,24 @@ function renderizarCards(dados) {
     const diretor = (linha.Diretor || "").trim();
     const itens = linha.Itens || "";
     const observacoes = linha.Observações || linha.Observacoes || "";
-    const statusEntregaPlanilha = linha.Status_Entrega || linha.Status || "";
+    const statusEntregaPlanilha = linha.Status_Entrega || "";
     const pax = linha.Pax || 0;
 
-    // ID ÚNICO 100% consistente
-    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(/\W+/g, "_");
+    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(
+      /\W+/g,
+      "_"
+    );
 
-    // 🔧 NOVA LÓGICA DE PRIORIDADE
-    // 1º localStorage, 2º planilha, 3º padrão
-    let estado =
-      statusSalvos[idUnico] ||
-      (statusEntregaPlanilha.trim() ? statusEntregaPlanilha : "Pendente");
+    let estado = (statusSalvos[idUnico] || statusEntregaPlanilha || "Pendente").trim();
 
-    // Não renderiza cards já marcados como entregues
+    // Ignora entregues (não renderiza)
     if (estado.toLowerCase() === "entregue") {
       entregues++;
+      statusSalvos[idUnico] = "Entregue";
       return;
+    } else {
+      pendentes++;
     }
-
-    pendentes++;
 
     const card = document.createElement("div");
     card.className = "card";
@@ -143,7 +159,9 @@ function renderizarCards(dados) {
         <strong>Pax:</strong> ${pax}
       </div>
       <div class="itens"><strong>Itens:</strong><br>${itens || "-"}</div>
-      <div class="observacoes"><strong>Observações:</strong><br>${observacoes || "-"}</div>
+      <div class="observacoes"><strong>Observações:</strong><br>${
+        observacoes || "-"
+      }</div>
       <div class="status"></div>
     `;
 
@@ -158,19 +176,19 @@ function renderizarCards(dados) {
     card.addEventListener("click", async () => {
       if (estado.toLowerCase() !== "pendente") return;
 
-      const confirmar = confirm("Deseja marcar este item como ENTREGUE?");
+      const confirmar = confirm(
+        "Tem certeza que deseja marcar este item como ENTREGUE?"
+      );
       if (!confirmar) return;
 
       estado = "Entregue";
       statusSalvos[idUnico] = estado;
       localStorage.setItem("statusCards", JSON.stringify(statusSalvos));
 
-      // Animação e remoção
       card.style.transition = "opacity 0.4s ease";
       card.style.opacity = "0";
       setTimeout(() => card.remove(), 400);
 
-      // Atualiza planilha em background
       try {
         const body = {
           Data: soData,
@@ -180,14 +198,19 @@ function renderizarCards(dados) {
           Status: "Entregue",
         };
 
-        fetch(API_URL, {
+        const response = await fetch(API_URL, {
           method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
 
-        mostrarNotificacao("✅ Marcado como entregue!");
+        const resultado = await response.json();
+
+        if (resultado.sucesso) {
+          mostrarNotificacao("✅ Marcado como entregue!");
+        } else {
+          mostrarNotificacao("⚠️ " + (resultado.erro || "Erro na atualização!"));
+        }
       } catch (erro) {
         console.error("Erro ao enviar para planilha:", erro);
         mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
@@ -204,9 +227,12 @@ function renderizarCards(dados) {
   `;
 
   const agora = new Date();
-  document.getElementById("updateInfo").textContent =
-    `Última atualização: ${agora.toLocaleTimeString()} — Atualiza a cada 1 minuto`;
+  document.getElementById(
+    "updateInfo"
+  ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
 }
+
+// ======= Notificação visual =======
 
 function mostrarNotificacao(texto) {
   const alerta = document.createElement("div");
@@ -232,6 +258,8 @@ function mostrarNotificacao(texto) {
     setTimeout(() => alerta.remove(), 300);
   }, 2500);
 }
+
+// ======= Inicialização =======
 
 document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
