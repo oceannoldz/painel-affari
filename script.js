@@ -133,7 +133,7 @@ function renderizarCards(rows) {
 
     card.innerHTML = `
       <div class="top">
-        <img class="logo" src="affari-logo.png" alt="Affari logo" onerror="this.style.display='none'">
+        <img class="logo"download.png" alt="Affari logo" onerror="this.style.display='none'">
         <h2>${escapeHtml(secretaria)}</h2>
       </div>
       <div class="info">
