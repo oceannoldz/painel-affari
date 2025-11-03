@@ -1,16 +1,12 @@
-// ===========================
-// Painel de Demandas - Affari
-// ===========================
-
 const PLANILHA =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
 
 const API_URL =
   "https://script.google.com/macros/s/AKfycbw9Hw6fcNuZgc3ptONEyRBnGjjJUpfQL-k88eHUESH7OGp6xwTz3GnlsJASYnMmSsp_-A/exec";
 
-const INTERVALO = 60 * 1000; // Atualiza a cada 1 minuto
+const INTERVALO = 60 * 1000; // 1 minuto
 
-// ======= Conversores de dados =======
+// ======== FUNÇÕES AUXILIARES ======== //
 
 function excelSerialToDate(serial) {
   if (!serial) return "";
@@ -60,20 +56,20 @@ function apenasData(str) {
   return m ? m[1] : String(str).trim();
 }
 
-// ======= Leitura da planilha =======
+// ======== LEITURA E RENDERIZAÇÃO ======== //
 
 async function carregarPlanilha() {
   try {
     const url = PLANILHA + "&t=" + new Date().getTime();
     let response = await fetch(url);
+    if (!response.ok) {
+      response = await fetch("https://cors.isomorphic-git.org/" + url);
+    }
     if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
 
     let texto = await response.text();
     texto = texto.replace(/^\uFEFF/, "").trim();
-
-    if (texto.startsWith("<")) {
-      throw new Error("⚠️ A planilha não está publicada em formato CSV.");
-    }
+    if (texto.startsWith("<")) throw new Error("⚠️ Planilha não está em formato CSV.");
 
     const primeiraLinha = texto.split("\n")[0];
     const delimitador = primeiraLinha.includes(";") ? ";" : ",";
@@ -85,10 +81,9 @@ async function carregarPlanilha() {
     });
 
     const dados = parsed.data;
-    if (!dados.length) {
-      throw new Error("⚠️ A planilha foi carregada, mas não contém registros.");
-    }
+    if (!dados.length) throw new Error("⚠️ Planilha sem registros.");
 
+    sincronizarLocalStorage(dados);
     renderizarCards(dados);
   } catch (erro) {
     console.error("Erro ao ler planilha:", erro);
@@ -97,7 +92,37 @@ async function carregarPlanilha() {
   }
 }
 
-// ======= Renderização dos cards =======
+// ======== SINCRONIZAÇÃO LOCALSTORAGE ======== //
+
+function sincronizarLocalStorage(dados) {
+  const statusSalvos = JSON.parse(localStorage.getItem("statusCards") || "{}");
+  const idsAtuais = new Set();
+
+  dados.forEach((linha) => {
+    const soData = apenasData(excelSerialToDate(linha.Data));
+    const horaHHMM = normalizarHora(linha["Horário"] || linha.Hora);
+    const local = (linha.Local || "").trim();
+    const diretor = (linha.Diretor || "").trim();
+    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(/\W+/g, "_");
+    idsAtuais.add(idUnico);
+  });
+
+  // Remove IDs locais que não estão mais na planilha
+  let alterado = false;
+  for (const id in statusSalvos) {
+    if (!idsAtuais.has(id)) {
+      delete statusSalvos[id];
+      alterado = true;
+    }
+  }
+
+  if (alterado) {
+    localStorage.setItem("statusCards", JSON.stringify(statusSalvos));
+    console.log("🧹 localStorage sincronizado (registros antigos removidos)");
+  }
+}
+
+// ======== RENDERIZAR CARDS ======== //
 
 function renderizarCards(dados) {
   const container = document.getElementById("cardsContainer");
@@ -119,7 +144,7 @@ function renderizarCards(dados) {
   dados.forEach((linha) => {
     const secretaria = linha.Secretaria?.trim() || "(Sem Secretaria)";
     const dataFmt = excelSerialToDate(linha.Data);
-    const soData = apenasData(dataFmt) || String(linha.Data || "").trim();
+    const soData = apenasData(dataFmt);
     const horaFmt = excelSerialToDate(linha["Horário"] || linha.Hora);
     const horaHHMM = normalizarHora(horaFmt || linha["Horário"] || linha.Hora);
 
@@ -127,20 +152,15 @@ function renderizarCards(dados) {
     const diretor = (linha.Diretor || "").trim();
     const itens = linha.Itens || "";
     const observacoes = linha.Observações || linha.Observacoes || "";
-    const statusEntregaPlanilha = linha.Status_Entrega || "";
+    const statusPlanilha = linha.Status_Entrega?.trim() || "";
     const pax = linha.Pax || 0;
 
-    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(
-      /\W+/g,
-      "_"
-    );
+    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(/\W+/g, "_");
 
-    let estado = (statusSalvos[idUnico] || statusEntregaPlanilha || "Pendente").trim();
+    let estado = statusSalvos[idUnico] || statusPlanilha || "Pendente";
 
-    // Ignora entregues (não renderiza)
     if (estado.toLowerCase() === "entregue") {
       entregues++;
-      statusSalvos[idUnico] = "Entregue";
       return;
     } else {
       pendentes++;
@@ -159,13 +179,12 @@ function renderizarCards(dados) {
         <strong>Pax:</strong> ${pax}
       </div>
       <div class="itens"><strong>Itens:</strong><br>${itens || "-"}</div>
-      <div class="observacoes"><strong>Observações:</strong><br>${
-        observacoes || "-"
-      }</div>
+      <div class="observacoes"><strong>Observações:</strong><br>${observacoes || "-"}</div>
       <div class="status"></div>
     `;
 
     const statusEl = card.querySelector(".status");
+    atualizarVisual();
 
     function atualizarVisual() {
       statusEl.textContent = estado;
@@ -175,10 +194,7 @@ function renderizarCards(dados) {
 
     card.addEventListener("click", async () => {
       if (estado.toLowerCase() !== "pendente") return;
-
-      const confirmar = confirm(
-        "Tem certeza que deseja marcar este item como ENTREGUE?"
-      );
+      const confirmar = confirm("Marcar este item como ENTREGUE?");
       if (!confirmar) return;
 
       estado = "Entregue";
@@ -197,27 +213,19 @@ function renderizarCards(dados) {
           Diretor: diretor,
           Status: "Entregue",
         };
-
-        const response = await fetch(API_URL, {
+        await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(body),
         });
-
-        const resultado = await response.json();
-
-        if (resultado.sucesso) {
-          mostrarNotificacao("✅ Marcado como entregue!");
-        } else {
-          mostrarNotificacao("⚠️ " + (resultado.erro || "Erro na atualização!"));
-        }
+        mostrarNotificacao("✅ Marcado como entregue!");
       } catch (erro) {
-        console.error("Erro ao enviar para planilha:", erro);
-        mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
+        console.error("Erro ao enviar:", erro);
+        mostrarNotificacao("⚠️ Erro ao atualizar planilha!");
       }
     });
 
-    atualizarVisual();
     container.appendChild(card);
   });
 
@@ -227,12 +235,11 @@ function renderizarCards(dados) {
   `;
 
   const agora = new Date();
-  document.getElementById(
-    "updateInfo"
-  ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
+  document.getElementById("updateInfo").textContent =
+    `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
 }
 
-// ======= Notificação visual =======
+// ======== NOTIFICAÇÕES ======== //
 
 function mostrarNotificacao(texto) {
   const alerta = document.createElement("div");
@@ -259,7 +266,7 @@ function mostrarNotificacao(texto) {
   }, 2500);
 }
 
-// ======= Inicialização =======
+// ======== INICIALIZAÇÃO ======== //
 
 document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
