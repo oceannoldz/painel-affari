@@ -1,4 +1,4 @@
-const API_URL = 'https://script.google.com/macros/s/AKfycbzxDUsDpFbAlPf3BI5woUvVP0bziZtC2kxko73W9Fof/dev';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyRzy0eTWYL60FFZpeDGpFF2F6pwAYxMJSiqLQjClHugtp6B6E7F963_ZgEcxgsC_A0DA/exec';
 const local=(linha.Local||'').trim();
 const diretor=(linha.Diretor||'').trim();
 const itens=linha.Itens||'';
@@ -76,3 +76,4 @@ setTimeout(()=>{alerta.style.opacity='0';setTimeout(()=>alerta.remove(),300);},2
 
 
 document.addEventListener('DOMContentLoaded',()=>{carregarPlanilha();setInterval(carregarPlanilha,INTERVALO);});
+
