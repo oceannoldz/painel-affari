@@ -53,23 +53,16 @@ function apenasData(str) {
   const m = String(str).match(/(\d{2}\/\d{2}\/\d{4})/);
   return m ? m[1] : String(str).trim();
 }
+
 async function carregarPlanilha() {
   try {
     const url = PLANILHA + "&t=" + new Date().getTime();
-
-    let response = await fetch(url);
-    if (!response.ok) {
-      response = await fetch("https://cors.isomorphic-git.org/" + url);
-    }
+    const response = await fetch(url);
     if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
 
     let texto = await response.text();
-
     texto = texto.replace(/^\uFEFF/, "").trim();
-
-    if (texto.startsWith("<")) {
-      throw new Error("⚠️ A planilha não está publicada em formato CSV.");
-    }
+    if (texto.startsWith("<")) throw new Error("Planilha não publicada como CSV.");
 
     const primeiraLinha = texto.split("\n")[0];
     const delimitador = primeiraLinha.includes(";") ? ";" : ",";
@@ -81,14 +74,6 @@ async function carregarPlanilha() {
     });
 
     const dados = parsed.data;
-    console.log(
-      `✅ CSV lido: ${dados.length} registros (delimitador "${delimitador}")`
-    );
-
-    if (!dados.length) {
-      throw new Error("⚠️ A planilha foi carregada, mas não contém registros.");
-    }
-
     renderizarCards(dados);
   } catch (erro) {
     console.error("Erro ao ler planilha:", erro);
@@ -96,6 +81,7 @@ async function carregarPlanilha() {
       <p style="color:white; text-align:center;">⚠️ ${erro.message}</p>`;
   }
 }
+
 function renderizarCards(dados) {
   const container = document.getElementById("cardsContainer");
   const contador = document.getElementById("contadorStatus");
@@ -124,21 +110,25 @@ function renderizarCards(dados) {
     const diretor = (linha.Diretor || "").trim();
     const itens = linha.Itens || "";
     const observacoes = linha.Observações || linha.Observacoes || "";
-    const statusEntregaPlanilha = linha.Status_Entrega || "";
+    const statusEntregaPlanilha = linha.Status_Entrega || linha.Status || "";
     const pax = linha.Pax || 0;
 
-    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(
-      /\W+/g,
-      "_"
-    );
-    let estado = statusSalvos[idUnico] || statusEntregaPlanilha || "Pendente";
+    // ID ÚNICO 100% consistente
+    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(/\W+/g, "_");
 
+    // 🔧 NOVA LÓGICA DE PRIORIDADE
+    // 1º localStorage, 2º planilha, 3º padrão
+    let estado =
+      statusSalvos[idUnico] ||
+      (statusEntregaPlanilha.trim() ? statusEntregaPlanilha : "Pendente");
+
+    // Não renderiza cards já marcados como entregues
     if (estado.toLowerCase() === "entregue") {
       entregues++;
       return;
-    } else {
-      pendentes++;
     }
+
+    pendentes++;
 
     const card = document.createElement("div");
     card.className = "card";
@@ -153,9 +143,7 @@ function renderizarCards(dados) {
         <strong>Pax:</strong> ${pax}
       </div>
       <div class="itens"><strong>Itens:</strong><br>${itens || "-"}</div>
-      <div class="observacoes"><strong>Observações:</strong><br>${
-        observacoes || "-"
-      }</div>
+      <div class="observacoes"><strong>Observações:</strong><br>${observacoes || "-"}</div>
       <div class="status"></div>
     `;
 
@@ -170,19 +158,19 @@ function renderizarCards(dados) {
     card.addEventListener("click", async () => {
       if (estado.toLowerCase() !== "pendente") return;
 
-      const confirmar = confirm(
-        "Tem certeza que deseja marcar este item como ENTREGUE?"
-      );
+      const confirmar = confirm("Deseja marcar este item como ENTREGUE?");
       if (!confirmar) return;
 
       estado = "Entregue";
       statusSalvos[idUnico] = estado;
       localStorage.setItem("statusCards", JSON.stringify(statusSalvos));
 
+      // Animação e remoção
       card.style.transition = "opacity 0.4s ease";
       card.style.opacity = "0";
       setTimeout(() => card.remove(), 400);
 
+      // Atualiza planilha em background
       try {
         const body = {
           Data: soData,
@@ -192,7 +180,7 @@ function renderizarCards(dados) {
           Status: "Entregue",
         };
 
-        await fetch(API_URL, {
+        fetch(API_URL, {
           method: "POST",
           mode: "no-cors",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -216,9 +204,8 @@ function renderizarCards(dados) {
   `;
 
   const agora = new Date();
-  document.getElementById(
-    "updateInfo"
-  ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
+  document.getElementById("updateInfo").textContent =
+    `Última atualização: ${agora.toLocaleTimeString()} — Atualiza a cada 1 minuto`;
 }
 
 function mostrarNotificacao(texto) {
@@ -250,4 +237,3 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
-
