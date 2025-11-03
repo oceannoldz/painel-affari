@@ -1,44 +1,22 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de Demandas - Affari</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="script.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Affari</title>
+<link rel="stylesheet" href="style.css">
 </head>
+<body>
+<div id="topBar">
+<h1>Painel de Demandas - Affari</h1>
+<div id="contadorStatus"></div>
+<div id="updateInfo"></div>
+<button onclick="carregarPlanilha()">Recarregar Agora</button>
+</div>
+<div id="cardsContainer"></div>
 
-<body style="background-color:#3b3b3b; color:#fff; font-family:'Segoe UI', sans-serif; margin:0; padding:0;">
 
-  <h1 style="text-align:center; margin:20px 0;">Painel de Demandas - Affari</h1>
-
-  <h3 id="contadorStatus" style="text-align:center; margin-bottom:10px; font-weight:500;">
-    ⏳ Carregando contagem...
-  </h3>
-
-  <div id="cardsContainer" class="container" style="display:flex; flex-wrap:wrap; justify-content:center; gap:15px; padding:10px;">
-    <p style="text-align:center; width:100%;">🔄 Carregando planilha...</p>
-  </div>
-
-  <footer id="updateInfo" style="text-align:center; margin-top:20px; font-size:13px;">
-    Atualizando automaticamente a cada 1 minuto
-  </footer>
-  <footer style="text-align:center; font-size:13px; opacity:0.8;">
-    Site desenvolvido por José Guilherme ©
-  </footer>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const script = document.createElement("script");
-      script.src = "script.js";
-      script.defer = true;
-      document.body.appendChild(script);
-    });
-  </script>
-
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="app.js"></script>
 </body>
-
 </html>
