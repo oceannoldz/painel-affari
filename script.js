@@ -150,12 +150,13 @@ function renderizarCards(dados) {
 
       try {
         const body = {
-          Data: soData,
-          Hora: horaHHMM,
-          Local: local,
-          Diretor: diretor,
-          Status: "Entregue",
-        };
+  Data: soData, // ex: "03/11/2025"
+  Hora: horaHHMM, // ex: "08:00"
+  Local: local.trim(),
+  Diretor: diretor.trim(),
+  Status: "Entregue",
+};
+
 
         await fetch(API_URL_JSON, {
           method: "POST",
@@ -216,3 +217,4 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarDados();
   setInterval(carregarDados, UPDATE_INTERVAL);
 });
+
