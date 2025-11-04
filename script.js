@@ -59,7 +59,7 @@ async function carregarPlanilha() {
     const url = PLANILHA + "&t=" + new Date().getTime();
     let response = await fetch(url);
     if (!response.ok) {
-      response = await fetch("https://cors.isomorphic-git.org/" + url);
+      response = await fetch(url);
     }
     if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
 
@@ -148,4 +148,5 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
 
