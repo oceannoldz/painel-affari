@@ -1,13 +1,9 @@
-// === CONFIGURAÇÕES GERAIS ===
-const PLANILHA =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
+// === CONFIGURAÇÕES ===
+const API_URL_JSON =
+  "https://script.google.com/macros/s/AKfycbxdoKGM2guipchqe8R2F9YAQWVEc-GVv-1fyr6EDwXCk3U8T60DK50XU9Wsvtb1d17iIA/exec"; // endpoint do Apps Script
+const UPDATE_INTERVAL = 30 * 1000; // atualiza a cada 30 segundos
 
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbxOzfOfPBSKs8f2Y5Kq_6bBsfnTFSu1KJUiuoj-_fNEfb6Z0JrbFpmdvwUq62lSkfNHrA/exec";
-
-const INTERVALO = 60 * 1000; // Atualiza a cada 1 minuto
-
-// === CONVERSORES E FORMATADORES ===
+// === FORMATADORES ===
 function excelSerialToDate(serial) {
   if (!serial) return "";
   if (typeof serial === "string") return serial.trim();
@@ -54,44 +50,19 @@ function apenasData(str) {
   return m ? m[1] : String(str).trim();
 }
 
-// === CARREGAMENTO DA PLANILHA ===
-async function carregarPlanilha() {
+// === CARREGAMENTO DE DADOS ===
+async function carregarDados() {
   try {
-    const url = PLANILHA + "&t=" + new Date().getTime(); // evita cache da requisição
-    let response = await fetch(url, { cache: "no-store" });
-
-    if (!response.ok) {
-      // tenta via proxy caso bloqueado pelo CORS
-      response = await fetch("https://cors.isomorphic-git.org/" + url);
-    }
-
-    if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
-
-    let texto = await response.text();
-    texto = texto.replace(/^\uFEFF/, "").trim();
-
-    if (texto.startsWith("<")) {
-      throw new Error("⚠️ A planilha não está publicada em formato CSV.");
-    }
-
-    const primeiraLinha = texto.split("\n")[0];
-    const delimitador = primeiraLinha.includes(";") ? ";" : ",";
-    const parsed = Papa.parse(texto, {
-      header: true,
-      skipEmptyLines: true,
-      delimiter: delimitador,
+    const response = await fetch(`${API_URL_JSON}?t=${Date.now()}`, {
+      cache: "no-store",
     });
+    if (!response.ok) throw new Error("Erro ao buscar dados da planilha.");
+    const dados = await response.json();
 
-    const dados = parsed.data;
-    console.log(`✅ CSV lido: ${dados.length} registros`);
-
-    if (!dados.length) {
-      throw new Error("⚠️ A planilha foi carregada, mas está vazia.");
-    }
-
+    console.log(`✅ Dados recebidos: ${dados.length} registros`);
     renderizarCards(dados);
   } catch (erro) {
-    console.error("Erro ao ler planilha:", erro);
+    console.error("Erro:", erro);
     document.getElementById("cardsContainer").innerHTML = `
       <p style="color:white; text-align:center;">⚠️ ${erro.message}</p>`;
   }
@@ -107,7 +78,7 @@ function renderizarCards(dados) {
   let pendentes = 0;
   let entregues = 0;
 
-  // Ordena por horário
+  // Ordena por hora
   dados.sort((a, b) => {
     const horaA = normalizarHora(a["Horário"] || a.Hora || "");
     const horaB = normalizarHora(b["Horário"] || b.Hora || "");
@@ -137,7 +108,7 @@ function renderizarCards(dados) {
       pendentes++;
     }
 
-    // === CARD ===
+    // Cria card visual
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
@@ -158,26 +129,21 @@ function renderizarCards(dados) {
     `;
 
     const statusEl = card.querySelector(".status");
-
     function atualizarVisual() {
       statusEl.textContent = estado;
       card.classList.remove("pendente", "entregue");
       card.classList.add(estado.toLowerCase());
     }
 
-    // === EVENTO DE CLIQUE ===
+    // Clique → marcar como entregue
     card.addEventListener("click", async () => {
       if (estado.toLowerCase() !== "pendente") return;
 
-      const confirmar = confirm(
-        "Tem certeza que deseja marcar este item como ENTREGUE?"
-      );
+      const confirmar = confirm("Marcar este item como ENTREGUE?");
       if (!confirmar) return;
 
       estado = "Entregue";
       atualizarVisual();
-
-      // Animação e remoção
       card.style.transition = "opacity 0.4s ease";
       card.style.opacity = "0";
       setTimeout(() => card.remove(), 400);
@@ -191,7 +157,7 @@ function renderizarCards(dados) {
           Status: "Entregue",
         };
 
-        await fetch(API_URL, {
+        await fetch(API_URL_JSON, {
           method: "POST",
           mode: "no-cors",
           headers: { "Content-Type": "application/json" },
@@ -199,10 +165,10 @@ function renderizarCards(dados) {
         });
 
         mostrarNotificacao("✅ Marcado como entregue!");
-        setTimeout(carregarPlanilha, 1200);
+        setTimeout(carregarDados, 1000);
       } catch (erro) {
-        console.error("Erro ao enviar para planilha:", erro);
-        mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
+        console.error("Erro ao enviar:", erro);
+        mostrarNotificacao("⚠️ Erro ao atualizar!");
       }
     });
 
@@ -210,16 +176,13 @@ function renderizarCards(dados) {
     container.appendChild(card);
   });
 
-  // === RESUMO ===
+  // Contadores e info
   contador.innerHTML = `
     <span style="color:#ff4d4d;">🔴 Pendentes: ${pendentes}</span> &nbsp;&nbsp;
     <span style="color:#00b050;">🟢 Entregues: ${entregues}</span>
   `;
-
-  const agora = new Date();
-  document.getElementById(
-    "updateInfo"
-  ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
+  document.getElementById("updateInfo").textContent =
+    `Última atualização: ${new Date().toLocaleTimeString()} — Atualizando a cada 30 segundos`;
 }
 
 // === NOTIFICAÇÃO VISUAL ===
@@ -250,7 +213,6 @@ function mostrarNotificacao(texto) {
 
 // === INICIALIZAÇÃO ===
 document.addEventListener("DOMContentLoaded", () => {
-  carregarPlanilha();
-  setInterval(carregarPlanilha, INTERVALO);
+  carregarDados();
+  setInterval(carregarDados, UPDATE_INTERVAL);
 });
-
