@@ -59,7 +59,9 @@ async function carregarPlanilha() {
     const url = PLANILHA + "&t=" + new Date().getTime();
     let response = await fetch(url);
     if (!response.ok) {
-      response = await fetch(url);
+  response = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(url));
+}
+
     }
     if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
 
@@ -148,5 +150,6 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
 
 
