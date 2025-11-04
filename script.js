@@ -58,7 +58,7 @@ function apenasData(str) {
 async function carregarPlanilha() {
   try {
     const url = PLANILHA + "&t=" + new Date().getTime(); // evita cache da requisição
-    let response = await fetch(url);
+    let response = await fetch(url, { cache: "no-store" });
 
     if (!response.ok) {
       // tenta via proxy caso bloqueado pelo CORS
@@ -253,3 +253,4 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
