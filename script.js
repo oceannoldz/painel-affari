@@ -1,11 +1,13 @@
+// === CONFIGURAÇÕES GERAIS ===
 const PLANILHA =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
 
 const API_URL =
   "https://script.google.com/macros/s/AKfycbxOzfOfPBSKs8f2Y5Kq_6bBsfnTFSu1KJUiuoj-_fNEfb6Z0JrbFpmdvwUq62lSkfNHrA/exec";
 
-const INTERVALO = 60 * 1000; // 1 minuto
+const INTERVALO = 60 * 1000; // Atualiza a cada 1 minuto
 
+// === CONVERSORES E FORMATADORES ===
 function excelSerialToDate(serial) {
   if (!serial) return "";
   if (typeof serial === "string") return serial.trim();
@@ -15,14 +17,12 @@ function excelSerialToDate(serial) {
   const date_info = new Date(utc_value * 1000);
   const fractional_day = serial - Math.floor(serial) + 0.0000001;
   const total_seconds = Math.floor(86400 * fractional_day);
-
   const hours = Math.floor(total_seconds / 3600);
   const minutes = Math.floor((total_seconds % 3600) / 60);
 
   const d = String(date_info.getUTCDate()).padStart(2, "0");
   const m = String(date_info.getUTCMonth() + 1).padStart(2, "0");
   const y = date_info.getUTCFullYear();
-
   const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const diaSemana = diasSemana[date_info.getUTCDay()];
 
@@ -54,13 +54,17 @@ function apenasData(str) {
   return m ? m[1] : String(str).trim();
 }
 
+// === CARREGAMENTO DA PLANILHA ===
 async function carregarPlanilha() {
   try {
-    const url = PLANILHA + "&t=" + new Date().getTime();
+    const url = PLANILHA + "&t=" + new Date().getTime(); // evita cache da requisição
     let response = await fetch(url);
+
     if (!response.ok) {
+      // tenta via proxy caso bloqueado pelo CORS
       response = await fetch("https://cors.isomorphic-git.org/" + url);
     }
+
     if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
 
     let texto = await response.text();
@@ -72,7 +76,6 @@ async function carregarPlanilha() {
 
     const primeiraLinha = texto.split("\n")[0];
     const delimitador = primeiraLinha.includes(";") ? ";" : ",";
-
     const parsed = Papa.parse(texto, {
       header: true,
       skipEmptyLines: true,
@@ -80,12 +83,10 @@ async function carregarPlanilha() {
     });
 
     const dados = parsed.data;
-    console.log(
-      `✅ CSV lido: ${dados.length} registros (delimitador "${delimitador}")`
-    );
+    console.log(`✅ CSV lido: ${dados.length} registros`);
 
     if (!dados.length) {
-      throw new Error("⚠️ A planilha foi carregada, mas não contém registros.");
+      throw new Error("⚠️ A planilha foi carregada, mas está vazia.");
     }
 
     renderizarCards(dados);
@@ -96,10 +97,17 @@ async function carregarPlanilha() {
   }
 }
 
+// === RENDERIZAÇÃO DOS CARDS ===
+function renderizarCards(dados) {
+  const container = document.getElementById("cardsContainer");
+  const contador = document.getElementById("contadorStatus");
+  if (!container) return;
+
   container.innerHTML = "";
   let pendentes = 0;
   let entregues = 0;
 
+  // Ordena por horário
   dados.sort((a, b) => {
     const horaA = normalizarHora(a["Horário"] || a.Hora || "");
     const horaB = normalizarHora(b["Horário"] || b.Hora || "");
@@ -120,10 +128,6 @@ async function carregarPlanilha() {
     const statusEntregaPlanilha = linha.Status_Entrega || "";
     const pax = linha.Pax || 0;
 
-    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(
-      /\W+/g,
-      "_"
-    );
     let estado = statusEntregaPlanilha || "Pendente";
 
     if (estado.toLowerCase() === "entregue") {
@@ -133,6 +137,7 @@ async function carregarPlanilha() {
       pendentes++;
     }
 
+    // === CARD ===
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
@@ -160,6 +165,7 @@ async function carregarPlanilha() {
       card.classList.add(estado.toLowerCase());
     }
 
+    // === EVENTO DE CLIQUE ===
     card.addEventListener("click", async () => {
       if (estado.toLowerCase() !== "pendente") return;
 
@@ -170,6 +176,8 @@ async function carregarPlanilha() {
 
       estado = "Entregue";
       atualizarVisual();
+
+      // Animação e remoção
       card.style.transition = "opacity 0.4s ease";
       card.style.opacity = "0";
       setTimeout(() => card.remove(), 400);
@@ -191,7 +199,6 @@ async function carregarPlanilha() {
         });
 
         mostrarNotificacao("✅ Marcado como entregue!");
-        // Recarrega planilha após atualização
         setTimeout(carregarPlanilha, 1200);
       } catch (erro) {
         console.error("Erro ao enviar para planilha:", erro);
@@ -203,6 +210,7 @@ async function carregarPlanilha() {
     container.appendChild(card);
   });
 
+  // === RESUMO ===
   contador.innerHTML = `
     <span style="color:#ff4d4d;">🔴 Pendentes: ${pendentes}</span> &nbsp;&nbsp;
     <span style="color:#00b050;">🟢 Entregues: ${entregues}</span>
@@ -214,6 +222,7 @@ async function carregarPlanilha() {
   ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
 }
 
+// === NOTIFICAÇÃO VISUAL ===
 function mostrarNotificacao(texto) {
   const alerta = document.createElement("div");
   alerta.textContent = texto;
@@ -239,8 +248,8 @@ function mostrarNotificacao(texto) {
   }, 2500);
 }
 
+// === INICIALIZAÇÃO ===
 document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
-
