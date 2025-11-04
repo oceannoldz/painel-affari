@@ -1,6 +1,6 @@
 // === CONFIGURAÇÕES ===
 const API_URL_JSON =
-  "https://script.google.com/macros/s/AKfycbxdoKGM2guipchqe8R2F9YAQWVEc-GVv-1fyr6EDwXCk3U8T60DK50XU9Wsvtb1d17iIA/exec"; // endpoint do Apps Script
+  "https://script.google.com/macros/s/AKfycbymCML92y2aeDoem6dqC4tXdVMV0kMTvf2GgFf4SahjOjNex1weiVJOAq6gueO4QZ2Y/exec"; // endpoint do Apps Script
 const UPDATE_INTERVAL = 30 * 1000; // atualiza a cada 30 segundos
 
 // === FORMATADORES ===
@@ -217,4 +217,5 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarDados();
   setInterval(carregarDados, UPDATE_INTERVAL);
 });
+
 
