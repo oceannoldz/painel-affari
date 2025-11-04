@@ -88,135 +88,35 @@ async function carregarPlanilha() {
       throw new Error("⚠️ A planilha foi carregada, mas não contém registros.");
     }
 
-    renderizarCards(dados);
+    // 🔸 NÃO renderiza mais os cards (apenas exibe no console)
+    console.log("Planilha carregada com sucesso:", dados.length, "registros.");
   } catch (erro) {
     console.error("Erro ao ler planilha:", erro);
-    document.getElementById("cardsContainer").innerHTML = `
-      <p style="color:white; text-align:center;">⚠️ ${erro.message}</p>`;
+    const container = document.getElementById("cardsContainer");
+    if (container) {
+      container.innerHTML = `<p style="color:white; text-align:center;">⚠️ ${erro.message}</p>`;
+    }
   }
 }
 
-function renderizarCards(dados) {
-  const container = document.getElementById("cardsContainer");
-  const contador = document.getElementById("contadorStatus");
-  if (!container) return;
-
-  container.innerHTML = "";
-  let pendentes = 0;
-  let entregues = 0;
-
-  dados.sort((a, b) => {
-    const horaA = normalizarHora(a["Horário"] || a.Hora || "");
-    const horaB = normalizarHora(b["Horário"] || b.Hora || "");
-    return horaA.localeCompare(horaB);
-  });
-
-  dados.forEach((linha) => {
-    const secretaria = linha.Secretaria?.trim() || "(Sem Secretaria)";
-    const dataFmt = excelSerialToDate(linha.Data);
-    const soData = apenasData(dataFmt) || String(linha.Data || "").trim();
-    const horaFmt = excelSerialToDate(linha["Horário"] || linha.Hora);
-    const horaHHMM = normalizarHora(horaFmt || linha["Horário"] || linha.Hora);
-
-    const local = (linha.Local || "").trim();
-    const diretor = (linha.Diretor || "").trim();
-    const itens = linha.Itens || "";
-    const observacoes = linha.Observações || linha.Observacoes || "";
-    const statusEntregaPlanilha = linha.Status_Entrega || "";
-    const pax = linha.Pax || 0;
-
-    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(
-      /\W+/g,
-      "_"
-    );
-    let estado = statusEntregaPlanilha || "Pendente";
-
-    if (estado.toLowerCase() === "entregue") {
-      entregues++;
-      return;
-    } else {
-      pendentes++;
-    }
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <img src="download.png" alt="logo">
-      <h2>${secretaria}</h2>
-      <div class="info">
-        <strong>Diretor:</strong> ${diretor || "-"}<br>
-        <strong>Local:</strong> ${local || "-"}<br>
-        <strong>Data:</strong> ${dataFmt}<br>
-        <strong>Hora:</strong> ${horaHHMM}<br>
-        <strong>Pax:</strong> ${pax}
-      </div>
-      <div class="itens"><strong>Itens:</strong><br>${itens || "-"}</div>
-      <div class="observacoes"><strong>Observações:</strong><br>${
-        observacoes || "-"
-      }</div>
-      <div class="status"></div>
-    `;
-
-    const statusEl = card.querySelector(".status");
-
-    function atualizarVisual() {
-      statusEl.textContent = estado;
-      card.classList.remove("pendente", "entregue");
-      card.classList.add(estado.toLowerCase());
-    }
-
-    card.addEventListener("click", async () => {
-      if (estado.toLowerCase() !== "pendente") return;
-
-      const confirmar = confirm(
-        "Tem certeza que deseja marcar este item como ENTREGUE?"
-      );
-      if (!confirmar) return;
-
-      estado = "Entregue";
-      atualizarVisual();
-      card.style.transition = "opacity 0.4s ease";
-      card.style.opacity = "0";
-      setTimeout(() => card.remove(), 400);
-
-      try {
-        const body = {
-          Data: soData,
-          Hora: horaHHMM,
-          Local: local,
-          Diretor: diretor,
-          Status: "Entregue",
-        };
-
-        await fetch(API_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-
-        mostrarNotificacao("✅ Marcado como entregue!");
-        // Recarrega planilha após atualização
-        setTimeout(carregarPlanilha, 1200);
-      } catch (erro) {
-        console.error("Erro ao enviar para planilha:", erro);
-        mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
-      }
+// 🔸 Ajuste no fetch para envio ao Apps Script (sem 'no-cors')
+async function marcarComoEntregue(dadosEnvio) {
+  try {
+    const resposta = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dadosEnvio),
     });
 
-    atualizarVisual();
-    container.appendChild(card);
-  });
+    if (!resposta.ok) throw new Error("Erro HTTP ao enviar dados");
 
-  contador.innerHTML = `
-    <span style="color:#ff4d4d;">🔴 Pendentes: ${pendentes}</span> &nbsp;&nbsp;
-    <span style="color:#00b050;">🟢 Entregues: ${entregues}</span>
-  `;
-
-  const agora = new Date();
-  document.getElementById(
-    "updateInfo"
-  ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
+    const resultado = await resposta.json();
+    console.log("✅ Dados enviados com sucesso:", resultado);
+    mostrarNotificacao("✅ Marcado como entregue!");
+  } catch (erro) {
+    console.error("Erro ao enviar para planilha:", erro);
+    mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
+  }
 }
 
 function mostrarNotificacao(texto) {
@@ -248,4 +148,3 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
-
