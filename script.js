@@ -2,9 +2,9 @@ const PLANILHA =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
 
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbxOzfOfPBSKs8f2Y5Kq_6bBsfnTFSu1KJUiuoj-_fNEfb6Z0JrbFpmdvwUq62lSkfNHrA/exec";
+  "https://script.google.com/macros/s/AKfycbymCML92y2aeDoem6dqC4tXdVMV0kMTvf2GgFf4SahjOjNex1weiVJOAq6gueO4QZ2Y/exec";
 
-const INTERVALO = 60 * 1000; // 1 minuto
+const INTERVALO = 30 * 1000; // 1 minuto
 
 function excelSerialToDate(serial) {
   if (!serial) return "";
@@ -141,7 +141,7 @@ function renderizarCards(dados) {
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <img src="design-plano-design-de-logotipo-mc_23-2149482035.jpg" alt="logo">
+      <img src="download.png" alt="logo">
       <h2>${secretaria}</h2>
       <div class="info">
         <strong>Diretor:</strong> ${diretor || "-"}<br>
@@ -248,3 +248,4 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
