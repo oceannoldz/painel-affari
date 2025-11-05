@@ -50,7 +50,8 @@ const apenasData = (str) =>
 
 async function carregarPlanilha() {
   try {
-    const url = `${PLANILHA}&t=${Date.now()}`;
+    const PROXY = "https://api.allorigins.win/raw?url=";
+const url = `${PROXY}${encodeURIComponent(PLANILHA)}&t=${Date.now()}`;
     let response = await fetch(url, { cache: "no-store" });
     if (!response.ok) throw new Error("Erro ao carregar planilha.");
 
@@ -205,3 +206,4 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
