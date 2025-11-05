@@ -1,5 +1,5 @@
 const PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
-const API_URL = "https://script.google.com/macros/s/AKfycbymCML92y2aeDoem6dqC4tXdVMV0kMTvf2GgFf4SahjOjNex1weiVJOAq6gueO4QZ2Y/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyi6i4Fwr5brTfRpoxpzmUwERKIGsByKTj7HGGjqDGQNVqzqabfBR0UgECd3qGMtUCabQ/exec";
 const INTERVALO = 30 * 1000; // 30 segundos (ajustado para consistência com o texto)
 
 // Funções auxiliares para localStorage de itens entregues
@@ -221,3 +221,4 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
