@@ -1,5 +1,5 @@
-const PLANILHA = "https://script.google.com/macros/s/AKfycbzUnG6TTSd4OoTpB0bwWKHmhXbRTyyKwuos4WHEt-eQfq52LOt6ykaMu2X6OYBbZ29hlA/exec";  // Substitua [SCRIPT_ID] pela ID real
-const API_URL = "https://script.google.com/macros/s/AKfycbzUnG6TTSd4OoTpB0bwWKHmhXbRTyyKwuos4WHEt-eQfq52LOt6ykaMu2X6OYBbZ29hlA/exec";  // Mesmo ID para POST
+const PLANILHA = "https://script.google.com/macros/s/AKfycbxnAyJ5Bdnh6uoX6ei0fcecd2yrccwaEqvbqF9O5Upln2QvrWwLNH4pQ49X8bmVk4_3gw/exec";  // Substitua [SCRIPT_ID] pela ID real
+const API_URL = "hhttps://script.google.com/macros/s/AKfycbxnAyJ5Bdnh6uoX6ei0fcecd2yrccwaEqvbqF9O5Upln2QvrWwLNH4pQ49X8bmVk4_3gw/exec";  // Mesmo ID para POST
 const INTERVALO = 30 * 1000; // 30 segundos
 
 // Funções auxiliares para localStorage de itens entregues
@@ -231,4 +231,5 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
 
