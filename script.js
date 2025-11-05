@@ -1,5 +1,5 @@
-const PLANILHA = "https://script.google.com/macros/s/AKfycbxnAyJ5Bdnh6uoX6ei0fcecd2yrccwaEqvbqF9O5Upln2QvrWwLNH4pQ49X8bmVk4_3gw/exec";  // Substitua [SCRIPT_ID] pela ID real
-const API_URL = "hhttps://script.google.com/macros/s/AKfycbxnAyJ5Bdnh6uoX6ei0fcecd2yrccwaEqvbqF9O5Upln2QvrWwLNH4pQ49X8bmVk4_3gw/exec";  // Mesmo ID para POST
+const PLANILHA = "https://script.google.com/macros/s/AKfycbxnAyJ5Bdnh6uoX6ei0fcecd2yrccwaEqvbqF9O5Upln2QvrWwLNH4pQ49X8bmVk4_3gw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxnAyJ5Bdnh6uoX6ei0fcecd2yrccwaEqvbqF9O5Upln2QvrWwLNH4pQ49X8bmVk4_3gw/exec";
 const INTERVALO = 30 * 1000; // 30 segundos
 
 // Funções auxiliares para localStorage de itens entregues
@@ -52,9 +52,10 @@ function apenasData(str) {
 async function carregarPlanilha() {
   try {
     const url = PLANILHA;
-    const proxyUrl = "https://cors-anywhere.herokuapp.com/" + url;  // Proxy para resolver CORS
-    console.log("Tentando carregar URL com proxy:", proxyUrl);
-    const response = await fetch(proxyUrl);
+    // Alteração: Removendo o proxy CORS
+    console.log("Tentando carregar URL diretamente:", url);
+    const response = await fetch(url);
+    
     if (!response.ok) {
       console.error(`Erro HTTP: ${response.status} - ${response.statusText}`);
       throw new Error(`Erro ao carregar planilha: ${response.status} (${response.statusText})`);
@@ -62,10 +63,15 @@ async function carregarPlanilha() {
     let texto = await response.text();
     texto = texto.replace(/^\uFEFF/, "").trim();
     if (texto.startsWith("<")) {
-      throw new Error("⚠️ A resposta não é um CSV válido.");
+      // Verifica se a resposta não é uma página HTML de erro (como 403/404)
+      if (texto.toLowerCase().includes("erro") || texto.toLowerCase().includes("forbidden")) {
+         throw new Error("⚠️ Acesso negado. Verifique as permissões de implantação do Apps Script.");
+      }
+      throw new Error("⚠️ A resposta não é um CSV válido. (Pode ser erro de permissão do Apps Script)");
     }
     const primeiraLinha = texto.split("\n")[0];
     const delimitador = primeiraLinha.includes(";") ? ";" : ",";
+    // Papa.parse deve ser carregado (assumindo que o script 'PapaParse' está incluído no HTML)
     const parsed = Papa.parse(texto, { header: true, skipEmptyLines: true, delimiter: delimitador });
     const dados = parsed.data;
     console.log(`✅ CSV lido: ${dados.length} registros (delimitador "${delimitador}")`);
@@ -159,9 +165,12 @@ function renderizarCards(dados) {
       estado = "Entregue";
       atualizarVisual();
       adicionarEntregueLocal(idUnico);
+      
+      // Animação de remoção
       card.style.transition = "opacity 0.4s ease";
       card.style.opacity = "0";
-      setTimeout(() => card.remove(), 400);
+      setTimeout(() => card.remove(), 400); 
+
       try {
         const body = {
           Data: soData,
@@ -186,10 +195,11 @@ function renderizarCards(dados) {
         } else {
           mostrarNotificacao("⚠️ " + (result.message || "Erro desconhecido"));
         }
-        carregarPlanilha();
+        // Recarrega para obter o estado mais recente da planilha (opcional, já removeu o card)
+        // carregarPlanilha(); 
       } catch (erro) {
         console.error("Erro ao enviar para planilha:", erro);
-        mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
+        mostrarNotificacao("⚠️ Erro ao atualizar a planilha! Verifique o console.");
       }
     });
 
@@ -220,16 +230,4 @@ function mostrarNotificacao(texto) {
     transition: "opacity .3s",
   });
   document.body.appendChild(alerta);
-  requestAnimationFrame(() => (alerta.style.opacity = "1"));
-  setTimeout(() => {
-    alerta.style.opacity = "0";
-    setTimeout(() => alerta.remove(), 300);
-  }, 2500);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  carregarPlanilha();
-  setInterval(carregarPlanilha, INTERVALO);
-});
-
-
+  requestAnimationFrame(() => (alerta.
