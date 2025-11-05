@@ -52,8 +52,9 @@ function apenasData(str) {
 async function carregarPlanilha() {
   try {
     const url = PLANILHA;
-    console.log("Tentando carregar URL:", url);
-    const response = await fetch(url);
+    const proxyUrl = "https://cors-anywhere.herokuapp.com/" + url;  // Proxy para resolver CORS
+    console.log("Tentando carregar URL com proxy:", proxyUrl);
+    const response = await fetch(proxyUrl);
     if (!response.ok) {
       console.error(`Erro HTTP: ${response.status} - ${response.statusText}`);
       throw new Error(`Erro ao carregar planilha: ${response.status} (${response.statusText})`);
@@ -230,3 +231,4 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
