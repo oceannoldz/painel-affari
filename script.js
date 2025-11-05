@@ -1,5 +1,5 @@
-const PLANILHA = "https://script.google.com/macros/s/[SCRIPT_ID]/exec";  // Substitua [SCRIPT_ID] pela URL real do doGet
-const API_URL = "https://script.google.com/macros/s/AKfycbymCML92y2aeDoem6dqC4tXdVMV0kMTvf2GgFf4SahjOjNex1weiVJOAq6gueO4QZ2Y/exec";
+const PLANILHA = "https://script.google.com/macros/s/AKfycbzUnG6TTSd4OoTpB0bwWKHmhXbRTyyKwuos4WHEt-eQfq52LOt6ykaMu2X6OYBbZ29hlA/exec";  // Substitua [SCRIPT_ID] pela ID real
+const API_URL = "https://script.google.com/macros/s/AKfycbzUnG6TTSd4OoTpB0bwWKHmhXbRTyyKwuos4WHEt-eQfq52LOt6ykaMu2X6OYBbZ29hlA/exec";  // Mesmo ID para POST
 const INTERVALO = 30 * 1000; // 30 segundos
 
 // Funções auxiliares para localStorage de itens entregues
