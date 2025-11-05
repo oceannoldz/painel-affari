@@ -52,11 +52,12 @@ function apenasData(str) {
 async function carregarPlanilha() {
   try {
     const url = PLANILHA + "&t=" + new Date().getTime();
-    let response = await fetch(url);
+    console.log("Tentando carregar URL:", url);  // Log para depuração
+    const response = await fetch(url);
     if (!response.ok) {
-      response = await fetch("https://cors.isomorphic-git.org/" + url);
+      console.error(`Erro HTTP: ${response.status} - ${response.statusText}`);  // Log detalhado
+      throw new Error(`Erro ao carregar planilha: ${response.status} (${response.statusText})`);
     }
-    if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
     let texto = await response.text();
     texto = texto.replace(/^\uFEFF/, "").trim();
     if (texto.startsWith("<")) {
@@ -220,3 +221,4 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
