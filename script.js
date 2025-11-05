@@ -1,11 +1,11 @@
 const PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
-const API_URL = "https://script.google.com/macros/s/AKfycbyi6i4Fwr5brTfRpoxpzmUwERKIGsByKTj7HGGjqDGQNVqzqabfBR0UgECd3qGMtUCabQ/exec";
-const INTERVALO = 30 * 1000; // 30 segundos (ajustado para consistência com o texto)
+const API_URL = "https://script.google.com/macros/s/AKfycbymCML92y2aeDoem6dqC4tXdVMV0kMTvf2GgFf4SahjOjNex1weiVJOAq6gueO4QZ2Y/exec";
+const INTERVALO = 30 * 1000; // 30 segundos
 
 // Funções auxiliares para localStorage de itens entregues
 function getEntreguesLocais() {
   const entregues = localStorage.getItem('entregues');
-  return entregues ? new Set(JSON.parse(entregues)) : new Set();  // Sempre retorna um Set
+  return entregues ? new Set(JSON.parse(entregues)) : new Set();
 }
 
 function adicionarEntregueLocal(idUnico) {
@@ -156,7 +156,7 @@ function renderizarCards(dados) {
       if (!confirmar) return;
       estado = "Entregue";
       atualizarVisual();
-      adicionarEntregueLocal(idUnico); // Adiciona ao localStorage
+      adicionarEntregueLocal(idUnico);
       card.style.transition = "opacity 0.4s ease";
       card.style.opacity = "0";
       setTimeout(() => card.remove(), 400);
@@ -168,15 +168,14 @@ function renderizarCards(dados) {
           Diretor: diretor,
           Status: "Entregue",
         };
+        console.log("Enviando dados:", body);  // Log para depuração
         await fetch(API_URL, {
           method: "POST",
-          mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
         mostrarNotificacao("✅ Marcado como entregue!");
-        // Recarrega planilha após atualização
-        setTimeout(carregarPlanilha, 1200);
+        carregarPlanilha();  // Recarrega imediatamente
       } catch (erro) {
         console.error("Erro ao enviar para planilha:", erro);
         mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
@@ -221,4 +220,3 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
-
