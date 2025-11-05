@@ -2,7 +2,7 @@ const PLANILHA =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
 
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbymCML92y2aeDoem6dqC4tXdVMV0kMTvf2GgFf4SahjOjNex1weiVJOAq6gueO4QZ2Y/exec";
+  "https://script.google.com/macros/s/AKfycbxT68zO_C08wmrtPP-TlMLTE0gJZlOAL1lWNv9h2b2ltbppOi5AEU1owgnP7aYukwlkbA/exec";
 
 const INTERVALO = 30 * 1000; // 30 segundos
 
@@ -206,4 +206,5 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
 
