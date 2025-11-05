@@ -231,3 +231,8 @@ function mostrarNotificacao(texto) {
   });
   document.body.appendChild(alerta);
   requestAnimationFrame(() => (alerta.
+
+document.addEventListener("DOMContentLoaded", () => {
+  carregarPlanilha();
+  setInterval(carregarPlanilha, INTERVALO);
+}); // <-- Este parêntese e ponto e vírgula fecham a estrutura
