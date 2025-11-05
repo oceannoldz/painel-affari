@@ -5,7 +5,7 @@ const INTERVALO = 30 * 1000; // 30 segundos (ajustado para consistência com o t
 // Funções auxiliares para localStorage de itens entregues
 function getEntreguesLocais() {
   const entregues = localStorage.getItem('entregues');
-  return entregues ? JSON.parse(entregues) : new Set();
+  return entregues ? new Set(JSON.parse(entregues)) : new Set();  // Sempre retorna um Set
 }
 
 function adicionarEntregueLocal(idUnico) {
