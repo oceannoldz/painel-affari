@@ -2,7 +2,7 @@ const PLANILHA =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
 
 const API_URL =
-  "https://painel-affari-ma6m.vercel.app/";
+  "https://script.google.com/macros/s/AKfycbzM3tZFAjfQ5OWNYf9wHM4MjZ-TusKEJblIJI65INxjqWjy1wN1M8rFSGn8xK6g61jlUA/exec";
 
 const INTERVALO = 60 * 1000; // 1 minuto
 
@@ -279,6 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
 
 
 
