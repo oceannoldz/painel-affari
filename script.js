@@ -141,7 +141,7 @@ function renderizarCards(dados) {
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <img src="design-plano-design-de-logotipo-mc_23-2149482035.jpg" alt="logo">
+      <img src="download.png" alt="logo">
       <h2>${secretaria}</h2>
       <div class="info">
         <strong>Diretor:</strong> ${diretor || "-"}<br>
@@ -248,4 +248,5 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
 
