@@ -6,6 +6,8 @@ const API_URL =
 
 const INTERVALO = 60 * 1000; // 1 minuto
 
+// -------------------- FUNÇÕES DE CONVERSÃO --------------------
+
 function excelSerialToDate(serial) {
   if (!serial) return "";
   if (typeof serial === "string") return serial.trim();
@@ -54,6 +56,8 @@ function apenasData(str) {
   return m ? m[1] : String(str).trim();
 }
 
+// -------------------- CARREGAMENTO DA PLANILHA --------------------
+
 async function carregarPlanilha() {
   try {
     const url = PLANILHA + "&t=" + new Date().getTime();
@@ -80,9 +84,7 @@ async function carregarPlanilha() {
     });
 
     const dados = parsed.data;
-    console.log(
-      `✅ CSV lido: ${dados.length} registros (delimitador "${delimitador}")`
-    );
+    console.log(`✅ CSV lido: ${dados.length} registros`);
 
     if (!dados.length) {
       throw new Error("⚠️ A planilha foi carregada, mas não contém registros.");
@@ -95,6 +97,8 @@ async function carregarPlanilha() {
       <p style="color:white; text-align:center;">⚠️ ${erro.message}</p>`;
   }
 }
+
+// -------------------- RENDERIZAÇÃO DOS CARDS --------------------
 
 function renderizarCards(dados) {
   const container = document.getElementById("cardsContainer");
@@ -125,10 +129,7 @@ function renderizarCards(dados) {
     const statusEntregaPlanilha = linha.Status_Entrega || "";
     const pax = linha.Pax || 0;
 
-    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(
-      /\W+/g,
-      "_"
-    );
+    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(/\W+/g, "_");
     let estado = statusEntregaPlanilha || "Pendente";
 
     if (estado.toLowerCase() === "entregue") {
@@ -151,9 +152,7 @@ function renderizarCards(dados) {
         <strong>Pax:</strong> ${pax}
       </div>
       <div class="itens"><strong>Itens:</strong><br>${itens || "-"}</div>
-      <div class="observacoes"><strong>Observações:</strong><br>${
-        observacoes || "-"
-      }</div>
+      <div class="observacoes"><strong>Observações:</strong><br>${observacoes || "-"}</div>
       <div class="status"></div>
     `;
 
@@ -168,9 +167,7 @@ function renderizarCards(dados) {
     card.addEventListener("click", async () => {
       if (estado.toLowerCase() !== "pendente") return;
 
-      const confirmar = confirm(
-        "Tem certeza que deseja marcar este item como ENTREGUE?"
-      );
+      const confirmar = confirm("Tem certeza que deseja marcar este item como ENTREGUE?");
       if (!confirmar) return;
 
       estado = "Entregue";
@@ -188,15 +185,22 @@ function renderizarCards(dados) {
           Status: "Entregue",
         };
 
-        await fetch(API_URL, {
+        const resposta = await fetch(API_URL, {
           method: "POST",
-          mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
 
-        mostrarNotificacao("✅ Marcado como entregue!");
-        // Recarrega planilha após atualização
+        const resultado = await resposta.json();
+        console.log("Resposta da API:", resultado);
+
+        if (resultado.sucesso) {
+          mostrarNotificacao("✅ Marcado como entregue!");
+        } else {
+          mostrarNotificacao("⚠️ " + resultado.mensagem);
+        }
+
+        // Atualiza planilha após o retorno
         setTimeout(carregarPlanilha, 1200);
       } catch (erro) {
         console.error("Erro ao enviar para planilha:", erro);
@@ -214,10 +218,11 @@ function renderizarCards(dados) {
   `;
 
   const agora = new Date();
-  document.getElementById(
-    "updateInfo"
-  ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
+  document.getElementById("updateInfo").textContent =
+    `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
 }
+
+// -------------------- NOTIFICAÇÃO VISUAL --------------------
 
 function mostrarNotificacao(texto) {
   const alerta = document.createElement("div");
@@ -244,9 +249,9 @@ function mostrarNotificacao(texto) {
   }, 2500);
 }
 
+// -------------------- INICIALIZAÇÃO --------------------
+
 document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
-
-
