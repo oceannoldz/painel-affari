@@ -2,7 +2,7 @@ const PLANILHA =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
 
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbyHxOClzjb2TmQZPMvsLbKTMw3rI5NMsoyXamIwVRlOvSl2gsJdAm9CDP1vnIz4Vug_gg/exec";
+  "https://script.google.com/macros/s/AKfycbxfVrAw6RpvbKPE4TNWBC5BVKWqq7NXMYZwawBn94lOwqaZb0n0oDHm1ZHhbspklBrkUA/exec";
 
 const INTERVALO = 60 * 1000; // 1 minuto
 
@@ -299,3 +299,4 @@ document.addEventListener("DOMContentLoaded", () => {
   botaoTeste.onclick = testarAPI;
   document.body.appendChild(botaoTeste);
 });
+
