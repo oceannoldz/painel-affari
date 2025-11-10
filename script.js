@@ -1,44 +1,34 @@
+// ===== CONFIGURAÇÕES =====
 const PLANILHA =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
 
+// 🔹 Substitua abaixo pelo seu novo link do Apps Script publicado “Para qualquer pessoa, mesmo anônima”
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbxfVrAw6RpvbKPE4TNWBC5BVKWqq7NXMYZwawBn94lOwqaZb0n0oDHm1ZHhbspklBrkUA/exec";
+  "https://script.google.com/macros/s/AKfycbyyaS5rJfw13LJLiXudfhlvpBH9VIcEyt0rZtqmTL-Drbjk690kosWHOi02tglTM9pC4Q/exec";
 
 const INTERVALO = 60 * 1000; // 1 minuto
 
-// ------------------- FUNÇÕES AUXILIARES ---------------------
-
+// ===== FUNÇÕES AUXILIARES =====
 function excelSerialToDate(serial) {
   if (!serial) return "";
   if (typeof serial === "string") return serial.trim();
-
   const utc_days = Math.floor(serial - 25569);
   const utc_value = utc_days * 86400;
   const date_info = new Date(utc_value * 1000);
   const fractional_day = serial - Math.floor(serial) + 0.0000001;
   const total_seconds = Math.floor(86400 * fractional_day);
-
   const hours = Math.floor(total_seconds / 3600);
   const minutes = Math.floor((total_seconds % 3600) / 60);
-
   const d = String(date_info.getUTCDate()).padStart(2, "0");
   const m = String(date_info.getUTCMonth() + 1).padStart(2, "0");
   const y = date_info.getUTCFullYear();
-
   const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const diaSemana = diasSemana[date_info.getUTCDay()];
-
   if (serial > 30000 && serial % 1 === 0) return `${diaSemana}, ${d}/${m}/${y}`;
   if (serial > 30000 && serial % 1 !== 0)
-    return `${diaSemana}, ${d}/${m}/${y} – ${String(hours).padStart(
-      2,
-      "0"
-    )}:${String(minutes).padStart(2, "0")}`;
+    return `${diaSemana}, ${d}/${m}/${y} – ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
   if (serial < 1)
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0"
-    )}`;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
   return `${d}/${m}/${y}`;
 }
 
@@ -56,46 +46,41 @@ function apenasData(str) {
   return m ? m[1] : String(str).trim();
 }
 
-// ------------------- FUNÇÃO PRINCIPAL ---------------------
-
+// ===== LEITURA DA PLANILHA =====
 async function carregarPlanilha() {
   try {
     const url = PLANILHA + "&t=" + new Date().getTime();
     let response = await fetch(url);
     if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
-
     let texto = await response.text();
     texto = texto.replace(/^\uFEFF/, "").trim();
+    if (texto.startsWith("<")) throw new Error("⚠️ A planilha não está publicada em formato CSV.");
 
     const primeiraLinha = texto.split("\n")[0];
     const delimitador = primeiraLinha.includes(";") ? ";" : ",";
-
     const parsed = Papa.parse(texto, {
       header: true,
       skipEmptyLines: true,
       delimiter: delimitador,
     });
-
     const dados = parsed.data;
-
+    if (!dados.length) throw new Error("⚠️ Planilha vazia.");
     renderizarCards(dados);
   } catch (erro) {
     console.error("Erro ao ler planilha:", erro);
-    document.getElementById("cardsContainer").innerHTML = `
-      <p style="color:white; text-align:center;">⚠️ ${erro.message}</p>`;
+    document.getElementById("cardsContainer").innerHTML =
+      `<p style="color:white; text-align:center;">⚠️ ${erro.message}</p>`;
   }
 }
 
-// ------------------- RENDERIZAÇÃO DE CARDS ---------------------
-
+// ===== RENDERIZAÇÃO =====
 function renderizarCards(dados) {
   const container = document.getElementById("cardsContainer");
   const contador = document.getElementById("contadorStatus");
   if (!container) return;
-
   container.innerHTML = "";
-  let pendentes = 0;
-  let entregues = 0;
+
+  let pendentes = 0, entregues = 0;
 
   dados.sort((a, b) => {
     const horaA = normalizarHora(a["Horário"] || a.Hora || "");
@@ -115,11 +100,7 @@ function renderizarCards(dados) {
     const observacoes = linha.Observações || linha.Observacoes || "";
     const statusEntregaPlanilha = linha.Status_Entrega || "";
     const pax = linha.Pax || 0;
-
-    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(
-      /\W+/g,
-      "_"
-    );
+    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(/\W+/g, "_");
     let estado = statusEntregaPlanilha || "Pendente";
 
     if (estado.toLowerCase() === "entregue") {
@@ -142,28 +123,22 @@ function renderizarCards(dados) {
         <strong>Pax:</strong> ${pax}
       </div>
       <div class="itens"><strong>Itens:</strong><br>${itens || "-"}</div>
-      <div class="observacoes"><strong>Observações:</strong><br>${
-        observacoes || "-"
-      }</div>
-      <div class="status" style="color:${
-        estado.toLowerCase() === "pendente" ? "#ff4d4d" : "#00b050"
-      }; font-weight:bold;">${estado}</div>
+      <div class="observacoes"><strong>Observações:</strong><br>${observacoes || "-"}</div>
+      <div class="status" style="font-weight:bold; color:${estado === "Pendente" ? "#ff4d4d" : "#00b050"};">
+        ${estado}
+      </div>
     `;
 
     const statusEl = card.querySelector(".status");
-
     function atualizarVisual() {
       statusEl.textContent = estado;
-      statusEl.style.color =
-        estado.toLowerCase() === "pendente" ? "#ff4d4d" : "#00b050";
+      statusEl.style.color = estado === "Pendente" ? "#ff4d4d" : "#00b050";
     }
 
+    // ===== CLICK DO CARD =====
     card.addEventListener("click", async () => {
       if (estado.toLowerCase() !== "pendente") return;
-
-      const confirmar = confirm(
-        "Tem certeza que deseja marcar este item como ENTREGUE?"
-      );
+      const confirmar = confirm("Tem certeza que deseja marcar este item como ENTREGUE?");
       if (!confirmar) return;
 
       estado = "Entregue";
@@ -181,32 +156,26 @@ function renderizarCards(dados) {
           Status: "Entregue",
         };
 
-        const resposta = await fetch(API_URL, {
+        const resp = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
 
-        if (!resposta.ok)
-          throw new Error("Falha ao conectar ao Apps Script.");
-
-        const resultado = await resposta.json();
-        console.log("Retorno da API:", resultado);
-
-        if (resultado.sucesso) {
-          mostrarNotificacao(resultado.mensagem);
+        const txt = await resp.text();
+        console.log("Retorno Apps Script:", txt);
+        if (txt.includes("✅") || txt.includes("sucesso")) {
+          mostrarNotificacao("✅ Marcado como entregue!");
+          setTimeout(carregarPlanilha, 1500);
         } else {
-          mostrarNotificacao(resultado.mensagem || "⚠️ Falha ao enviar!");
+          throw new Error("Resposta inesperada do servidor");
         }
-
-        setTimeout(carregarPlanilha, 1500);
       } catch (erro) {
         console.error("Erro ao enviar para planilha:", erro);
-        mostrarNotificacao("⚠️ Falha ao enviar a planilha");
+        mostrarNotificacao("❌ Falha ao conectar com o Apps Script");
       }
     });
 
-    atualizarVisual();
     container.appendChild(card);
   });
 
@@ -216,13 +185,11 @@ function renderizarCards(dados) {
   `;
 
   const agora = new Date();
-  document.getElementById(
-    "updateInfo"
-  ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
+  document.getElementById("updateInfo").textContent =
+    `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
 }
 
-// ------------------- NOTIFICAÇÃO VISUAL ---------------------
-
+// ===== ALERTA BONITO =====
 function mostrarNotificacao(texto) {
   const alerta = document.createElement("div");
   alerta.textContent = texto;
@@ -248,55 +215,8 @@ function mostrarNotificacao(texto) {
   }, 2500);
 }
 
-// ------------------- TESTE DE API ---------------------
-
-async function testarAPI() {
-  mostrarNotificacao("🔄 Testando conexão com Apps Script...");
-  try {
-    const teste = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        Data: "10/11/2025",
-        Hora: "08:30",
-        Local: "Copa 3º Andar",
-        Diretor: "Teste",
-        Status: "Entregue",
-      }),
-    });
-
-    const resultado = await teste.json();
-    console.log("Retorno do teste:", resultado);
-    mostrarNotificacao(resultado.mensagem || "✅ Conexão bem-sucedida!");
-  } catch (e) {
-    console.error("Erro no teste:", e);
-    mostrarNotificacao("❌ Falha ao conectar com o Apps Script");
-  }
-}
-
-// ------------------- INICIALIZAÇÃO ---------------------
-
+// ===== INICIALIZAÇÃO =====
 document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
-
-  // Cria botão de teste
-  const botaoTeste = document.createElement("button");
-  botaoTeste.textContent = "⚙️ Testar API";
-  Object.assign(botaoTeste.style, {
-    position: "fixed",
-    bottom: "20px",
-    left: "20px",
-    background: "#0078d4",
-    color: "#fff",
-    border: "none",
-    padding: "8px 14px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontSize: "13px",
-    boxShadow: "0 2px 6px rgba(0,0,0,.3)",
-  });
-  botaoTeste.onclick = testarAPI;
-  document.body.appendChild(botaoTeste);
 });
-
