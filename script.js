@@ -2,7 +2,7 @@ const PLANILHA =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSR3FyZKCXFS5Mi4UaRc6GLCSfH0erH_rraD87M0ZFo6jeDT0hEnpvUfEH2-cxXI0-ionFDxLFFUuvg/pub?output=csv";
 
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbxOzfOfPBSKs8f2Y5Kq_6bBsfnTFSu1KJUiuoj-_fNEfb6Z0JrbFpmdvwUq62lSkfNHrA/exec";
+  "https://script.google.com/macros/s/AKfycbzDfldWArG4SCEV6lFLDDhcsNAvvcboN-ztsvxnwtpSQtQOSQ6a6-xWGkhZGmuF22_LaQ/exec";
 
 const INTERVALO = 60 * 1000; // 1 minuto
 
@@ -173,11 +173,23 @@ function renderizarCards(dados) {
       );
       if (!confirmar) return;
 
-      estado = "Entregue";
-      atualizarVisual();
-      card.style.transition = "opacity 0.4s ease";
-      card.style.opacity = "0";
-      setTimeout(() => card.remove(), 400);
+      // Spinner opcional:
+      let spinner;
+      if (!document.getElementById('spinnerGlobal')) {
+        spinner = document.createElement('div');
+        spinner.id = 'spinnerGlobal';
+        spinner.style.position = 'fixed';
+        spinner.style.top = '50%';
+        spinner.style.left = '50%';
+        spinner.style.transform = 'translate(-50%, -50%)';
+        spinner.style.backgroundColor = 'rgba(0,0,0,0.4)';
+        spinner.style.color = '#fff';
+        spinner.style.padding = '16px';
+        spinner.style.borderRadius = '8px';
+        spinner.style.zIndex = '10000';
+        spinner.textContent = 'Atualizando...';
+        document.body.appendChild(spinner);
+      }
 
       try {
         const body = {
@@ -188,19 +200,38 @@ function renderizarCards(dados) {
           Status: "Entregue",
         };
 
-        await fetch(API_URL, {
+        // ENVIO CORRIGIDO!
+        // Remove o mode: "no-cors" para receber resposta
+        const resp = await fetch(API_URL, {
           method: "POST",
-          mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
 
-        mostrarNotificacao("✅ Marcado como entregue!");
-        // Recarrega planilha após atualização
-        setTimeout(carregarPlanilha, 1200);
+        let resposta;
+        try { 
+          resposta = await resp.json(); 
+        } catch(e) { 
+          // fallback se não for JSON
+          resposta = { success: false, message: await resp.text() }; 
+        }
+
+        if (resposta.success) {
+          mostrarNotificacao("✅ Marcado como entregue!");
+          // Remove o card visualmente
+          card.style.transition = "opacity 0.4s ease";
+          card.style.opacity = "0";
+          setTimeout(() => card.remove(), 400);
+          // Recarrega planilha após atualização
+          setTimeout(carregarPlanilha, 1000);
+        } else {
+          mostrarNotificacao("⚠️ Erro ao atualizar: "+(resposta.message||""));
+        }
       } catch (erro) {
         console.error("Erro ao enviar para planilha:", erro);
         mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
+      } finally {
+        if (document.getElementById('spinnerGlobal')) document.getElementById('spinnerGlobal').remove();
       }
     });
 
