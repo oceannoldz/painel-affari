@@ -6,7 +6,8 @@ const API_URL =
 
 const INTERVALO = 60 * 1000; // 1 minuto
 
-// 🕒 Converte formato do Excel para data legível
+// ------------------- FUNÇÕES AUXILIARES ---------------------
+
 function excelSerialToDate(serial) {
   if (!serial) return "";
   if (typeof serial === "string") return serial.trim();
@@ -41,7 +42,6 @@ function excelSerialToDate(serial) {
   return `${d}/${m}/${y}`;
 }
 
-// 🕓 Normaliza hora (ex: "8.3" -> "08:30")
 function normalizarHora(h) {
   if (!h) return "";
   const s = String(h).trim();
@@ -50,27 +50,26 @@ function normalizarHora(h) {
   return s;
 }
 
-// 📅 Extrai apenas data (dd/mm/yyyy)
 function apenasData(str) {
   if (!str) return "";
   const m = String(str).match(/(\d{2}\/\d{2}\/\d{4})/);
   return m ? m[1] : String(str).trim();
 }
 
-// 🔄 Carrega planilha pública e renderiza cards
+// ------------------- FUNÇÃO PRINCIPAL ---------------------
+
 async function carregarPlanilha() {
   try {
     const url = PLANILHA + "&t=" + new Date().getTime();
-    const response = await fetch(url);
+    let response = await fetch(url);
     if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
 
-    const texto = (await response.text()).replace(/^\uFEFF/, "").trim();
-
-    if (texto.startsWith("<"))
-      throw new Error("⚠️ A planilha não está publicada como CSV.");
+    let texto = await response.text();
+    texto = texto.replace(/^\uFEFF/, "").trim();
 
     const primeiraLinha = texto.split("\n")[0];
     const delimitador = primeiraLinha.includes(";") ? ";" : ",";
+
     const parsed = Papa.parse(texto, {
       header: true,
       skipEmptyLines: true,
@@ -78,7 +77,6 @@ async function carregarPlanilha() {
     });
 
     const dados = parsed.data;
-    if (!dados.length) throw new Error("Planilha vazia.");
 
     renderizarCards(dados);
   } catch (erro) {
@@ -88,7 +86,8 @@ async function carregarPlanilha() {
   }
 }
 
-// 🧩 Monta os cards no front-end
+// ------------------- RENDERIZAÇÃO DE CARDS ---------------------
+
 function renderizarCards(dados) {
   const container = document.getElementById("cardsContainer");
   const contador = document.getElementById("contadorStatus");
@@ -99,30 +98,33 @@ function renderizarCards(dados) {
   let entregues = 0;
 
   dados.sort((a, b) => {
-    const horaA = normalizarHora(a["Horário"] || "");
-    const horaB = normalizarHora(b["Horário"] || "");
+    const horaA = normalizarHora(a["Horário"] || a.Hora || "");
+    const horaB = normalizarHora(b["Horário"] || b.Hora || "");
     return horaA.localeCompare(horaB);
   });
 
   dados.forEach((linha) => {
     const secretaria = linha.Secretaria?.trim() || "(Sem Secretaria)";
     const dataFmt = excelSerialToDate(linha.Data);
-    const soData = apenasData(dataFmt);
-    const horaFmt = excelSerialToDate(linha["Horário"]);
-    const horaHHMM = normalizarHora(horaFmt || linha["Horário"]);
-
+    const soData = apenasData(dataFmt) || String(linha.Data || "").trim();
+    const horaFmt = excelSerialToDate(linha["Horário"] || linha.Hora);
+    const horaHHMM = normalizarHora(horaFmt || linha["Horário"] || linha.Hora);
     const local = (linha.Local || "").trim();
     const diretor = (linha.Diretor || "").trim();
     const itens = linha.Itens || "";
     const observacoes = linha.Observações || linha.Observacoes || "";
-    const statusEntregaPlanilha = (linha.Status_Entrega || "").trim();
+    const statusEntregaPlanilha = linha.Status_Entrega || "";
     const pax = linha.Pax || 0;
 
+    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(
+      /\W+/g,
+      "_"
+    );
     let estado = statusEntregaPlanilha || "Pendente";
 
     if (estado.toLowerCase() === "entregue") {
       entregues++;
-      return; // Não mostra entregues
+      return;
     } else {
       pendentes++;
     }
@@ -133,18 +135,29 @@ function renderizarCards(dados) {
       <img src="download.png" alt="logo">
       <h2>${secretaria}</h2>
       <div class="info">
-        <strong>Diretor:</strong> ${diretor}<br>
-        <strong>Local:</strong> ${local}<br>
+        <strong>Diretor:</strong> ${diretor || "-"}<br>
+        <strong>Local:</strong> ${local || "-"}<br>
         <strong>Data:</strong> ${dataFmt}<br>
         <strong>Hora:</strong> ${horaHHMM}<br>
         <strong>Pax:</strong> ${pax}
       </div>
-      <div class="itens"><strong>Itens:</strong><br>${itens}</div>
-      <div class="observacoes"><strong>Observações:</strong><br>${observacoes}</div>
-      <div class="status">${estado}</div>
+      <div class="itens"><strong>Itens:</strong><br>${itens || "-"}</div>
+      <div class="observacoes"><strong>Observações:</strong><br>${
+        observacoes || "-"
+      }</div>
+      <div class="status" style="color:${
+        estado.toLowerCase() === "pendente" ? "#ff4d4d" : "#00b050"
+      }; font-weight:bold;">${estado}</div>
     `;
 
-    // 🖱️ Clique para marcar como entregue
+    const statusEl = card.querySelector(".status");
+
+    function atualizarVisual() {
+      statusEl.textContent = estado;
+      statusEl.style.color =
+        estado.toLowerCase() === "pendente" ? "#ff4d4d" : "#00b050";
+    }
+
     card.addEventListener("click", async () => {
       if (estado.toLowerCase() !== "pendente") return;
 
@@ -154,10 +167,9 @@ function renderizarCards(dados) {
       if (!confirmar) return;
 
       estado = "Entregue";
-      card.querySelector(".status").textContent = estado;
+      atualizarVisual();
       card.style.transition = "opacity 0.4s ease";
       card.style.opacity = "0";
-
       setTimeout(() => card.remove(), 400);
 
       try {
@@ -175,17 +187,26 @@ function renderizarCards(dados) {
           body: JSON.stringify(body),
         });
 
-        const resultado = await resposta.json();
-        console.log(resultado.mensagem);
+        if (!resposta.ok)
+          throw new Error("Falha ao conectar ao Apps Script.");
 
-        mostrarNotificacao(resultado.mensagem);
+        const resultado = await resposta.json();
+        console.log("Retorno da API:", resultado);
+
+        if (resultado.sucesso) {
+          mostrarNotificacao(resultado.mensagem);
+        } else {
+          mostrarNotificacao(resultado.mensagem || "⚠️ Falha ao enviar!");
+        }
+
         setTimeout(carregarPlanilha, 1500);
       } catch (erro) {
-        console.error("Erro ao enviar atualização:", erro);
-        mostrarNotificacao("⚠️ Falha ao atualizar na planilha!");
+        console.error("Erro ao enviar para planilha:", erro);
+        mostrarNotificacao("⚠️ Falha ao enviar a planilha");
       }
     });
 
+    atualizarVisual();
     container.appendChild(card);
   });
 
@@ -194,12 +215,14 @@ function renderizarCards(dados) {
     <span style="color:#00b050;">🟢 Entregues: ${entregues}</span>
   `;
 
+  const agora = new Date();
   document.getElementById(
     "updateInfo"
-  ).textContent = `Última atualização: ${new Date().toLocaleTimeString()}`;
+  ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
 }
 
-// 🔔 Notificação visual
+// ------------------- NOTIFICAÇÃO VISUAL ---------------------
+
 function mostrarNotificacao(texto) {
   const alerta = document.createElement("div");
   alerta.textContent = texto;
@@ -225,9 +248,54 @@ function mostrarNotificacao(texto) {
   }, 2500);
 }
 
-// 🚀 Inicialização
+// ------------------- TESTE DE API ---------------------
+
+async function testarAPI() {
+  mostrarNotificacao("🔄 Testando conexão com Apps Script...");
+  try {
+    const teste = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        Data: "10/11/2025",
+        Hora: "08:30",
+        Local: "Copa 3º Andar",
+        Diretor: "Teste",
+        Status: "Entregue",
+      }),
+    });
+
+    const resultado = await teste.json();
+    console.log("Retorno do teste:", resultado);
+    mostrarNotificacao(resultado.mensagem || "✅ Conexão bem-sucedida!");
+  } catch (e) {
+    console.error("Erro no teste:", e);
+    mostrarNotificacao("❌ Falha ao conectar com o Apps Script");
+  }
+}
+
+// ------------------- INICIALIZAÇÃO ---------------------
+
 document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
-});
 
+  // Cria botão de teste
+  const botaoTeste = document.createElement("button");
+  botaoTeste.textContent = "⚙️ Testar API";
+  Object.assign(botaoTeste.style, {
+    position: "fixed",
+    bottom: "20px",
+    left: "20px",
+    background: "#0078d4",
+    color: "#fff",
+    border: "none",
+    padding: "8px 14px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "13px",
+    boxShadow: "0 2px 6px rgba(0,0,0,.3)",
+  });
+  botaoTeste.onclick = testarAPI;
+  document.body.appendChild(botaoTeste);
+});
