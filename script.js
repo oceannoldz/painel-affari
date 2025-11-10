@@ -6,6 +6,11 @@ const API_URL =
 
 const INTERVALO = 60 * 1000; // 1 minuto
 
+// 🔧 Se a página foi recarregada manualmente, força reload completo sem cache
+if (performance.getEntriesByType("navigation")[0].type === "reload") {
+  location.reload(true);
+}
+
 function excelSerialToDate(serial) {
   if (!serial) return "";
   if (typeof serial === "string") return serial.trim();
@@ -57,10 +62,14 @@ function apenasData(str) {
 async function carregarPlanilha() {
   try {
     const url = PLANILHA + "&t=" + new Date().getTime();
-    let response = await fetch(url);
+
+    // 🔧 Força o navegador a não usar cache
+    let response = await fetch(url, { cache: "no-store" });
+
     if (!response.ok) {
-      response = await fetch("https://cors.isomorphic-git.org/" + url);
+      response = await fetch("https://cors.isomorphic-git.org/" + url, { cache: "no-store" });
     }
+
     if (!response.ok) throw new Error("Erro ao carregar planilha Google.");
 
     let texto = await response.text();
@@ -125,10 +134,7 @@ function renderizarCards(dados) {
     const statusEntregaPlanilha = linha.Status_Entrega || "";
     const pax = linha.Pax || 0;
 
-    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(
-      /\W+/g,
-      "_"
-    );
+    const idUnico = `${soData}-${horaHHMM}-${local}-${diretor}`.replace(/\W+/g, "_");
     let estado = statusEntregaPlanilha || "Pendente";
 
     if (estado.toLowerCase() === "entregue") {
@@ -151,9 +157,7 @@ function renderizarCards(dados) {
         <strong>Pax:</strong> ${pax}
       </div>
       <div class="itens"><strong>Itens:</strong><br>${itens || "-"}</div>
-      <div class="observacoes"><strong>Observações:</strong><br>${
-        observacoes || "-"
-      }</div>
+      <div class="observacoes"><strong>Observações:</strong><br>${observacoes || "-"}</div>
       <div class="status"></div>
     `;
 
@@ -168,9 +172,7 @@ function renderizarCards(dados) {
     card.addEventListener("click", async () => {
       if (estado.toLowerCase() !== "pendente") return;
 
-      const confirmar = confirm(
-        "Tem certeza que deseja marcar este item como ENTREGUE?"
-      );
+      const confirmar = confirm("Tem certeza que deseja marcar este item como ENTREGUE?");
       if (!confirmar) return;
 
       estado = "Entregue";
@@ -193,6 +195,7 @@ function renderizarCards(dados) {
           mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
+          cache: "no-store", // 🔧 também evita cache no POST
         });
 
         mostrarNotificacao("✅ Marcado como entregue!");
@@ -200,53 +203,4 @@ function renderizarCards(dados) {
         setTimeout(carregarPlanilha, 1200);
       } catch (erro) {
         console.error("Erro ao enviar para planilha:", erro);
-        mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
-      }
-    });
-
-    atualizarVisual();
-    container.appendChild(card);
-  });
-
-  contador.innerHTML = `
-    <span style="color:#ff4d4d;">🔴 Pendentes: ${pendentes}</span> &nbsp;&nbsp;
-    <span style="color:#00b050;">🟢 Entregues: ${entregues}</span>
-  `;
-
-  const agora = new Date();
-  document.getElementById(
-    "updateInfo"
-  ).textContent = `Última atualização: ${agora.toLocaleTimeString()} — Atualizando automaticamente a cada 1 minuto`;
-}
-
-function mostrarNotificacao(texto) {
-  const alerta = document.createElement("div");
-  alerta.textContent = texto;
-  Object.assign(alerta.style, {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    background: "#333",
-    color: "#fff",
-    padding: "10px 16px",
-    borderRadius: "8px",
-    boxShadow: "0 2px 6px rgba(0,0,0,.3)",
-    zIndex: 9999,
-    fontSize: "13px",
-    opacity: 0,
-    transition: "opacity .3s",
-  });
-  document.body.appendChild(alerta);
-  requestAnimationFrame(() => (alerta.style.opacity = "1"));
-  setTimeout(() => {
-    alerta.style.opacity = "0";
-    setTimeout(() => alerta.remove(), 300);
-  }, 2500);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  carregarPlanilha();
-  setInterval(carregarPlanilha, INTERVALO);
-});
-
-
+        mostrarNotificacao("⚠️ Erro ao atu
