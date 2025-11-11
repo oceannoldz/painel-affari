@@ -186,22 +186,29 @@ function renderizarCards(dados) {
           Local: local,
           Diretor: diretor,
           Status: "Entregue",
-        };
+  };
 
-        await fetch(API_URL, {
+        const resp = await fetch(API_URL, {
           method: "POST",
-          mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
-        });
+  });
 
-        mostrarNotificacao("✅ Marcado como entregue!");
-        // Recarrega planilha após atualização
-        setTimeout(carregarPlanilha, 1200);
-      } catch (erro) {
-        console.error("Erro ao enviar para planilha:", erro);
-        mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
-      }
+  const result = await resp.json();
+
+  if (result.status === "success") {
+    mostrarNotificacao("✅ Marcado como entregue!");
+    // Atualiza planilha depois que a resposta realmente chegar
+    setTimeout(carregarPlanilha, 2000);
+  } else {
+    console.error(result);
+    mostrarNotificacao("⚠️ Erro: " + (result.message || "ao atualizar"));
+  }
+} catch (erro) {
+  console.error("Erro ao enviar para planilha:", erro);
+  mostrarNotificacao("⚠️ Erro ao atualizar a planilha!");
+}
+
     });
 
     atualizarVisual();
@@ -248,5 +255,6 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarPlanilha();
   setInterval(carregarPlanilha, INTERVALO);
 });
+
 
 
