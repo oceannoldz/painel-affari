@@ -6,9 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel de Demandas - Affari</title>
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Apenas UMA chamada do PapaParse -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <!-- Biblioteca XLSX (se realmente for usada) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <!-- Seu script principal -->
   <script src="script.js" defer></script>
 </head>
 
@@ -30,15 +35,6 @@
   <footer style="text-align:center; font-size:13px; opacity:0.8;">
     Site desenvolvido por José Guilherme ©
   </footer>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const script = document.createElement("script");
-      script.src = "script.js";
-      script.defer = true;
-      document.body.appendChild(script);
-    });
-  </script>
 
 </body>
-
 </html>
